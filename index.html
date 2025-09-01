@@ -3,73 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧙‍♂️ Simple Dwarf Colony - Tileset Edition</title>
+    <title>🎨 Tileset Sprite Picker Tool</title>
     <style>
         body {
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #2c1810, #1a0f08);
+            background: #1a1a1a;
             font-family: 'Courier New', monospace;
             color: #fff;
             min-height: 100vh;
         }
         
-        #gameContainer {
+        .container {
             display: flex;
             gap: 20px;
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
         
-        #gameCanvas {
-            border: 3px solid #8B4513;
-            background: #2F1B14;
-            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
-            border-radius: 8px;
+        .left-panel {
+            flex: 1;
+            max-width: 800px;
         }
         
-        #ui {
+        .right-panel {
+            width: 350px;
             background: rgba(0,0,0,0.8);
             padding: 20px;
             border-radius: 10px;
-            border: 2px solid #8B4513;
-            min-width: 300px;
+            border: 2px solid #4CAF50;
             height: fit-content;
+            position: sticky;
+            top: 20px;
         }
         
         #title {
             text-align: center;
-            font-size: 20px;
+            font-size: 24px;
             margin-bottom: 20px;
-            color: #FFD700;
-            text-shadow: 0 0 10px #FFD700;
+            color: #4CAF50;
+            text-shadow: 0 0 10px #4CAF50;
         }
         
-        .stat-section {
+        #tilesetCanvas {
+            border: 2px solid #4CAF50;
+            background: #000;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+        }
+        
+        .info-section {
+            background: rgba(76, 175, 80, 0.1);
+            padding: 15px;
+            border-radius: 8px;
             margin: 15px 0;
-            padding: 10px;
-            background: rgba(139, 69, 19, 0.3);
-            border-radius: 5px;
+            border: 1px solid #4CAF50;
         }
         
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            font-size: 14px;
+        .info-section h3 {
+            margin-top: 0;
+            color: #4CAF50;
         }
         
-        .stat-value {
-            color: #FFD700;
+        .coord-display {
+            font-size: 18px;
             font-weight: bold;
+            color: #FFD700;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 5px;
+            margin: 10px 0;
         }
         
-        #controls {
-            margin-top: 20px;
+        .preview-tile {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #4CAF50;
+            margin: 10px auto;
+            image-rendering: pixelated;
+            background: #333;
+        }
+        
+        .suggestions {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .sprite-suggestion {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #4CAF50;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sprite-suggestion:hover {
+            background: rgba(76, 175, 80, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .sprite-suggestion.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-left-color: #FFD700;
+        }
+        
+        .sprite-name {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .sprite-coord {
+            color: #FFD700;
+            font-size: 12px;
+        }
+        
+        .sprite-desc {
+            color: #ccc;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        
+        .controls {
+            margin: 15px 0;
+        }
+        
+        input, select {
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 5px;
+            margin: 2px;
+            border-radius: 3px;
         }
         
         button {
-            background: #8B4513;
+            background: #4CAF50;
             color: white;
             border: none;
             padding: 8px 12px;
@@ -80,685 +153,482 @@
         }
         
         button:hover {
-            background: #A0522D;
+            background: #45a049;
         }
         
-        button:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
-        
-        #log {
-            background: rgba(0,0,0,0.9);
-            padding: 10px;
-            border-radius: 5px;
-            height: 150px;
-            overflow-y: auto;
-            font-size: 12px;
-            line-height: 1.4;
-            margin-top: 15px;
-        }
-        
-        .log-entry {
-            margin: 3px 0;
-            opacity: 0.9;
-        }
-        
-        .log-entry.important {
-            color: #FFD700;
-            font-weight: bold;
-        }
-        
-        .log-entry.error {
-            color: #FF4444;
-        }
-        
-        .log-entry.success {
-            color: #4CAF50;
-        }
-        
-        #tilesetStatus {
+        #codeOutput {
+            background: #000;
+            border: 1px solid #555;
             padding: 10px;
             margin: 10px 0;
-            border-radius: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .zoom-controls {
             text-align: center;
-            font-weight: bold;
-        }
-        
-        .status-loading {
-            background: rgba(255, 193, 7, 0.3);
-            color: #FFC107;
-        }
-        
-        .status-ready {
-            background: rgba(76, 175, 80, 0.3);
-            color: #4CAF50;
-        }
-        
-        .status-error {
-            background: rgba(244, 67, 54, 0.3);
-            color: #F44336;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <div id="title">🧙‍♂️ Simple Dwarf Colony - Tileset Edition 🏔️</div>
+    <div id="title">🎨 Tileset Sprite Picker Tool 🔍</div>
     
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="container">
+        <div class="left-panel">
+            <div class="zoom-controls">
+                <label>Zoom: </label>
+                <button onclick="changeZoom(0.5)">50%</button>
+                <button onclick="changeZoom(1)">100%</button>
+                <button onclick="changeZoom(2)">200%</button>
+                <button onclick="changeZoom(3)">300%</button>
+                <span id="zoomLevel">200%</span>
+            </div>
+            
+            <canvas id="tilesetCanvas"></canvas>
+            
+            <div style="text-align: center; margin: 15px 0; color: #aaa;">
+                🖱️ Click on any tile to select it and see its coordinates
+            </div>
+        </div>
         
-        <div id="ui">
-            <div id="tilesetStatus" class="status-loading">📦 Loading tileset...</div>
+        <div class="right-panel">
+            <div class="info-section">
+                <h3>📍 Selected Tile</h3>
+                <div class="coord-display" id="coordDisplay">
+                    Click a tile to select
+                </div>
+                <canvas id="previewCanvas" class="preview-tile" width="64" height="64"></canvas>
+            </div>
             
-            <div class="stat-section">
-                <h3>📊 Colony Stats</h3>
-                <div class="stat-item">
-                    <span>🥇 Gold:</span>
-                    <span class="stat-value" id="goldCount">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>👥 Dwarfs:</span>
-                    <span class="stat-value" id="dwarfCount">3</span>
-                </div>
-                <div class="stat-item">
-                    <span>🏠 Buildings:</span>
-                    <span class="stat-value" id="buildingCount">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>💎 Resources:</span>
-                    <span class="stat-value" id="resourceCount">0</span>
+            <div class="info-section">
+                <h3>⚙️ Tileset Info</h3>
+                <div id="tilesetInfo">Loading...</div>
+                <div class="controls">
+                    <label>Tile Size: </label>
+                    <input type="number" id="tileSizeInput" value="16" min="8" max="64" step="1" onchange="updateTileSize()">
+                    <button onclick="adjustTileSize(-1)" style="font-size: 11px; padding: 2px 6px;">-</button>
+                    <button onclick="adjustTileSize(1)" style="font-size: 11px; padding: 2px 6px;">+</button>
+                    <br><br>
+                    
+                    <label>Fine-Tune Grid Position:</label><br>
+                    <div style="display: flex; align-items: center; gap: 5px; margin: 5px 0;">
+                        <span style="width: 20px;">X:</span>
+                        <button onclick="adjustOffset('x', -1)" style="font-size: 11px; padding: 2px 6px;">←</button>
+                        <input type="number" id="offsetXInput" value="0" min="-50" max="50" step="0.1" onchange="updateOffsets()" style="width: 50px;">
+                        <button onclick="adjustOffset('x', 1)" style="font-size: 11px; padding: 2px 6px;">→</button>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 5px; margin: 5px 0;">
+                        <span style="width: 20px;">Y:</span>
+                        <button onclick="adjustOffset('y', -1)" style="font-size: 11px; padding: 2px 6px;">↑</button>
+                        <input type="number" id="offsetYInput" value="0" min="-50" max="50" step="0.1" onchange="updateOffsets()" style="width: 50px;">
+                        <button onclick="adjustOffset('y', 1)" style="font-size: 11px; padding: 2px 6px;">↓</button>
+                    </div>
+                    
+                    <div style="margin: 10px 0;">
+                        <button onclick="adjustOffset('x', -0.1)" style="font-size: 10px; padding: 2px 4px;">◀ 0.1</button>
+                        <button onclick="adjustOffset('x', 0.1)" style="font-size: 10px; padding: 2px 4px;">0.1 ▶</button>
+                        <button onclick="adjustOffset('y', -0.1)" style="font-size: 10px; padding: 2px 4px;">▲ 0.1</button>
+                        <button onclick="adjustOffset('y', 0.1)" style="font-size: 10px; padding: 2px 4px;">0.1 ▼</button>
+                    </div>
+                    
+                    <label>Grid: </label>
+                    <input type="checkbox" id="showGridCheckbox" checked onchange="toggleGrid()"> Show Grid
+                    <br>
+                    <button onclick="resetAlignment()" style="font-size: 11px; padding: 4px 8px; margin-top: 5px;">🎯 Reset to 0,0</button>
+                    <button onclick="savePosition()" style="font-size: 11px; padding: 4px 8px; background: #2196F3;">💾 Save Position</button>
                 </div>
             </div>
             
-            <div id="controls">
-                <h3>🎮 Actions</h3>
-                <button onclick="spawnDwarf()">👤 Hire Dwarf (50g)</button>
-                <button onclick="buildHouse()" id="buildBtn">🏠 Build House (100g)</button>
-                <button onclick="resetGame()">🔄 Reset Game</button>
+            <div class="info-section suggestions">
+                <h3>💡 Sprite Suggestions</h3>
+                <div id="spriteSuggestions">
+                    <!-- Will be populated by JavaScript -->
+                </div>
             </div>
             
-            <div id="log">
-                <div style="color: #4ECDC4; font-weight: bold; margin-bottom: 8px;">📜 Colony Log:</div>
+            <div class="info-section">
+                <h3>📋 Code Output</h3>
+                <button onclick="generateCode()">🔧 Generate TILE_MAP Code</button>
+                <textarea id="codeOutput" rows="8" readonly></textarea>
             </div>
         </div>
     </div>
 
     <script>
-        // ===========================================
-        // TILESET CONFIGURATION
-        // ===========================================
-        
-        // UPDATE THIS URL to point to your GitHub-hosted tileset image
+        // Configuration
         const TILESET_URL = 'https://raw.githubusercontent.com/JakeSeegers/testdorf/main/urizen_onebit_tileset__v2d0.png';
+        let TILE_SIZE = 16;
+        let OFFSET_X = 0;
+        let OFFSET_Y = 0;
+        let zoom = 2;
+        let showGrid = true;
         
-        // Tileset configuration (adjust based on your actual tileset)
-        const TILE_SIZE = 16; // Size of each tile in pixels
-        const TILESET_COLS = 64; // Number of columns in your tileset
-        const TILESET_ROWS = 32; // Number of rows in your tileset
-        
-        // Tile mapping - maps game objects to tile coordinates
-        const TILE_MAP = {
-            // Terrain
-            GRASS: { x: 0, y: 0 },
-            STONE: { x: 1, y: 0 },
-            DIRT: { x: 2, y: 0 },
-            WATER: { x: 3, y: 0 },
-            TREE: { x: 4, y: 0 },
-            
-            // Characters
-            DWARF_MALE: { x: 0, y: 1 },
-            DWARF_FEMALE: { x: 1, y: 1 },
-            DWARF_WORKING: { x: 2, y: 1 },
-            
-            // Buildings
-            HOUSE: { x: 0, y: 2 },
-            MINE: { x: 1, y: 2 },
-            WORKSHOP: { x: 2, y: 2 },
-            
-            // Resources
-            GOLD_ORE: { x: 0, y: 3 },
-            FOOD: { x: 1, y: 3 },
-            TOOLS: { x: 2, y: 3 },
-            
-            // UI/Effects
-            SELECTION: { x: 0, y: 4 },
-            SPARKLE: { x: 1, y: 4 }
-        };
-        
-        // ===========================================
-        // GAME VARIABLES
-        // ===========================================
-        
-        let canvas, ctx;
+        // Canvas references
+        let tilesetCanvas, tilesetCtx, previewCanvas, previewCtx;
         let tilesetImage = null;
-        let tilesetLoaded = false;
+        let selectedTileX = -1, selectedTileY = -1;
+        let selectedSprites = new Map();
         
-        // Game state
-        const game = {
-            gold: 50,
-            dwarfs: [],
-            buildings: [],
-            resources: [],
-            time: 0,
-            selectedDwarf: null
-        };
+        // Suggested sprite locations (I'll analyze your tileset)
+        const SPRITE_SUGGESTIONS = [
+            // Characters - Row 0-2 area
+            { name: 'DWARF_MALE', x: 0, y: 0, desc: 'Male dwarf character facing down' },
+            { name: 'DWARF_FEMALE', x: 1, y: 0, desc: 'Female dwarf character' },
+            { name: 'DWARF_WORKER', x: 2, y: 0, desc: 'Dwarf with tools/working' },
+            { name: 'DWARF_MINER', x: 3, y: 0, desc: 'Dwarf with pickaxe' },
+            
+            // Terrain - Usually in top-left area
+            { name: 'GRASS', x: 0, y: 10, desc: 'Grass terrain tile' },
+            { name: 'DIRT', x: 1, y: 10, desc: 'Dirt/earth terrain' },
+            { name: 'STONE', x: 2, y: 10, desc: 'Stone floor' },
+            { name: 'WATER', x: 3, y: 10, desc: 'Water tile' },
+            { name: 'TREE', x: 4, y: 10, desc: 'Tree/forest tile' },
+            
+            // Buildings - Usually middle area
+            { name: 'HOUSE', x: 0, y: 20, desc: 'Simple house/dwelling' },
+            { name: 'WORKSHOP', x: 1, y: 20, desc: 'Workshop building' },
+            { name: 'MINE_ENTRANCE', x: 2, y: 20, desc: 'Mine entrance' },
+            { name: 'STORAGE', x: 3, y: 20, desc: 'Storage building' },
+            
+            // Resources/Items - Usually scattered
+            { name: 'GOLD_ORE', x: 0, y: 30, desc: 'Gold ore deposit' },
+            { name: 'FOOD', x: 1, y: 30, desc: 'Food/bread' },
+            { name: 'TOOLS', x: 2, y: 30, desc: 'Tools/equipment' },
+            { name: 'CHEST', x: 3, y: 30, desc: 'Treasure chest' },
+            
+            // Effects
+            { name: 'SPARKLE', x: 0, y: 35, desc: 'Magic sparkle effect' },
+            { name: 'SELECTION', x: 1, y: 35, desc: 'Selection highlight' }
+        ];
         
-        // Map dimensions
-        const MAP_WIDTH = 50; // tiles
-        const MAP_HEIGHT = 37; // tiles
-        const SCALE = 1; // Scale factor for rendering
-        
-        // Camera/viewport
-        const camera = {
-            x: 0,
-            y: 0
-        };
-        
-        // ===========================================
-        // TILESET LOADING
-        // ===========================================
+        function init() {
+            console.log('🎨 Initializing Sprite Picker...');
+            
+            // Get canvas elements
+            tilesetCanvas = document.getElementById('tilesetCanvas');
+            tilesetCtx = tilesetCanvas.getContext('2d');
+            previewCanvas = document.getElementById('previewCanvas');
+            previewCtx = previewCanvas.getContext('2d');
+            
+            // Set image rendering
+            tilesetCtx.imageSmoothingEnabled = false;
+            previewCtx.imageSmoothingEnabled = false;
+            
+            // Load tileset
+            loadTileset();
+            
+            // Setup event listeners
+            tilesetCanvas.addEventListener('click', onTilesetClick);
+            tilesetCanvas.addEventListener('mousemove', onTilesetMouseMove);
+            
+            // Populate suggestions
+            populateSpriteSuggestions();
+        }
         
         function loadTileset() {
-            console.log('🎨 Loading tileset from:', TILESET_URL);
+            console.log('📦 Loading tileset...');
             
             tilesetImage = new Image();
-            tilesetImage.crossOrigin = 'anonymous'; // For GitHub images
+            tilesetImage.crossOrigin = 'anonymous';
             
             tilesetImage.onload = function() {
-                console.log('✅ Tileset loaded successfully!');
-                console.log('📐 Tileset dimensions:', tilesetImage.width, 'x', tilesetImage.height);
+                console.log('✅ Tileset loaded!');
+                console.log('📐 Dimensions:', tilesetImage.width, 'x', tilesetImage.height);
                 
-                tilesetLoaded = true;
-                updateTilesetStatus('ready', '✅ Tileset Ready!');
-                addLog('🎨 Beautiful tileset graphics loaded!', 'success');
-                
-                // Initialize the game now that tileset is ready
-                initializeGame();
+                updateOffsets(); // Initialize offsets
+                updateTilesetInfo();
+                renderTileset();
             };
             
             tilesetImage.onerror = function() {
-                console.error('❌ Failed to load tileset from:', TILESET_URL);
-                updateTilesetStatus('error', '❌ Tileset failed to load');
-                addLog('⚠️ Using placeholder graphics (tileset failed to load)', 'error');
-                
-                // Initialize game with placeholder graphics
-                tilesetLoaded = false;
-                initializeGame();
+                console.error('❌ Failed to load tileset');
+                document.getElementById('tilesetInfo').textContent = '❌ Failed to load tileset';
             };
             
             tilesetImage.src = TILESET_URL;
         }
         
-        function updateTilesetStatus(status, message) {
-            const statusEl = document.getElementById('tilesetStatus');
-            statusEl.className = `status-${status}`;
-            statusEl.textContent = message;
+        function updateTilesetInfo() {
+            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
+            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
+            
+            document.getElementById('tilesetInfo').innerHTML = `
+                📐 Image: ${tilesetImage.width} × ${tilesetImage.height}px<br>
+                🔲 Tile Size: ${TILE_SIZE}px<br>
+                📍 Offset: ${OFFSET_X}, ${OFFSET_Y}px<br>
+                📊 Grid: ${cols} × ${rows} tiles<br>
+                🎯 Total Tiles: ${cols * rows}
+            `;
         }
         
-        // ===========================================
-        // TILE DRAWING FUNCTIONS
-        // ===========================================
-        
-        function drawTile(tileKey, x, y, scale = SCALE) {
-            if (!tilesetLoaded || !tilesetImage) {
-                // Fallback to colored rectangles
-                drawPlaceholderTile(tileKey, x, y, scale);
-                return;
-            }
+        function renderTileset() {
+            if (!tilesetImage) return;
             
-            const tile = TILE_MAP[tileKey];
-            if (!tile) {
-                console.warn('Unknown tile:', tileKey);
-                return;
-            }
+            const displayWidth = tilesetImage.width * zoom;
+            const displayHeight = tilesetImage.height * zoom;
             
-            const sourceX = tile.x * TILE_SIZE;
-            const sourceY = tile.y * TILE_SIZE;
-            const destSize = TILE_SIZE * scale;
+            tilesetCanvas.width = displayWidth;
+            tilesetCanvas.height = displayHeight;
             
-            ctx.drawImage(
-                tilesetImage,
-                sourceX, sourceY, TILE_SIZE, TILE_SIZE,  // Source rectangle
-                x, y, destSize, destSize                  // Destination rectangle
-            );
-        }
-        
-        function drawPlaceholderTile(tileKey, x, y, scale = SCALE) {
-            const size = TILE_SIZE * scale;
+            // Draw the tileset
+            tilesetCtx.drawImage(tilesetImage, 0, 0, displayWidth, displayHeight);
             
-            // Simple colored rectangles as fallbacks
-            const colors = {
-                GRASS: '#228B22',
-                STONE: '#696969',
-                DIRT: '#8B4513',
-                WATER: '#4682B4',
-                TREE: '#006400',
-                DWARF_MALE: '#4A90E2',
-                DWARF_FEMALE: '#E24A90',
-                DWARF_WORKING: '#FFD700',
-                HOUSE: '#8B4513',
-                MINE: '#2F4F4F',
-                WORKSHOP: '#B8860B',
-                GOLD_ORE: '#FFD700',
-                FOOD: '#32CD32',
-                TOOLS: '#C0C0C0'
-            };
-            
-            ctx.fillStyle = colors[tileKey] || '#FFFFFF';
-            ctx.fillRect(x, y, size, size);
-            
-            // Add a border
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x, y, size, size);
-        }
-        
-        // ===========================================
-        // GAME OBJECTS
-        // ===========================================
-        
-        class Dwarf {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.targetX = x;
-                this.targetY = y;
-                this.gender = Math.random() < 0.5 ? 'male' : 'female';
-                this.task = 'idle';
-                this.workTimer = 0;
-                this.speed = 0.05;
-                this.name = this.generateName();
-            }
-            
-            generateName() {
-                const names = ['Thorin', 'Gimli', 'Balin', 'Dwalin', 'Fili', 'Kili', 'Bofur', 'Bombur'];
-                return names[Math.floor(Math.random() * names.length)];
-            }
-            
-            update() {
-                // Move towards target
-                const dx = this.targetX - this.x;
-                const dy = this.targetY - this.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance > 0.1) {
-                    this.x += (dx / distance) * this.speed;
-                    this.y += (dy / distance) * this.speed;
-                } else {
-                    // Reached target, do work or pick new target
-                    if (this.task === 'mining') {
-                        this.doMining();
-                    } else if (this.task === 'building') {
-                        this.doBuilding();
-                    } else {
-                        this.pickNewTarget();
-                    }
-                }
-                
-                if (this.workTimer > 0) this.workTimer--;
-            }
-            
-            pickNewTarget() {
-                // Look for nearby gold to mine
-                const nearbyGold = game.resources.find(r => 
-                    r.type === 'gold' && 
-                    Math.abs(r.x - this.x) < 5 && 
-                    Math.abs(r.y - this.y) < 5
-                );
-                
-                if (nearbyGold) {
-                    this.targetX = nearbyGold.x;
-                    this.targetY = nearbyGold.y;
-                    this.task = 'mining';
-                } else {
-                    // Wander randomly
-                    this.targetX = Math.random() * MAP_WIDTH;
-                    this.targetY = Math.random() * MAP_HEIGHT;
-                    this.task = 'wandering';
-                }
-            }
-            
-            doMining() {
-                if (this.workTimer <= 0) {
-                    // Find gold at this location
-                    const goldHere = game.resources.find(r => 
-                        r.type === 'gold' && 
-                        Math.floor(r.x) === Math.floor(this.x) && 
-                        Math.floor(r.y) === Math.floor(this.y)
-                    );
-                    
-                    if (goldHere) {
-                        game.gold += 10;
-                        game.resources = game.resources.filter(r => r !== goldHere);
-                        addLog(`⛏️ ${this.name} mined 10 gold!`);
-                        this.task = 'idle';
-                        this.workTimer = 60;
-                    }
-                }
-            }
-            
-            doBuilding() {
-                if (this.workTimer <= 0) {
-                    addLog(`🏠 ${this.name} completed construction!`, 'success');
-                    this.task = 'idle';
-                    this.workTimer = 120;
-                }
-            }
-            
-            draw() {
-                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
-                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
-                
-                let tileKey = this.gender === 'male' ? 'DWARF_MALE' : 'DWARF_FEMALE';
-                if (this.task === 'mining' || this.task === 'building') {
-                    tileKey = 'DWARF_WORKING';
-                }
-                
-                drawTile(tileKey, screenX, screenY);
-                
-                // Draw name
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = '10px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(this.name, screenX + TILE_SIZE/2, screenY - 2);
-                ctx.textAlign = 'left';
-            }
-        }
-        
-        class Building {
-            constructor(x, y, type) {
-                this.x = x;
-                this.y = y;
-                this.type = type;
-            }
-            
-            draw() {
-                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
-                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
-                drawTile('HOUSE', screenX, screenY);
-            }
-        }
-        
-        class Resource {
-            constructor(x, y, type) {
-                this.x = x;
-                this.y = y;
-                this.type = type;
-            }
-            
-            draw() {
-                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
-                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
-                
-                if (this.type === 'gold') {
-                    drawTile('GOLD_ORE', screenX, screenY);
-                }
-            }
-        }
-        
-        // ===========================================
-        // GAME INITIALIZATION
-        // ===========================================
-        
-        function initializeGame() {
-            console.log('🎮 Initializing game...');
-            
-            // Create initial dwarfs
-            game.dwarfs = [];
-            for (let i = 0; i < 3; i++) {
-                const dwarf = new Dwarf(
-                    MAP_WIDTH / 2 + (i - 1) * 2,
-                    MAP_HEIGHT / 2
-                );
-                game.dwarfs.push(dwarf);
-            }
-            
-            // Create some initial gold deposits
-            game.resources = [];
-            for (let i = 0; i < 10; i++) {
-                game.resources.push(new Resource(
-                    Math.random() * MAP_WIDTH,
-                    Math.random() * MAP_HEIGHT,
-                    'gold'
-                ));
-            }
-            
-            addLog('🏔️ Welcome to your dwarf colony!', 'important');
-            addLog('⛏️ Dwarfs will automatically mine nearby gold', 'important');
-            addLog('🏠 Build houses to expand your colony!', 'important');
-            
-            // Start the game loop
-            if (!game.running) {
-                game.running = true;
-                gameLoop();
-            }
-        }
-        
-        // ===========================================
-        // GAME LOOP
-        // ===========================================
-        
-        function gameLoop() {
-            if (!game.running) return;
-            
-            update();
-            render();
-            
-            game.time++;
-            requestAnimationFrame(gameLoop);
-        }
-        
-        function update() {
-            // Update all dwarfs
-            game.dwarfs.forEach(dwarf => dwarf.update());
-            
-            // Spawn new gold occasionally
-            if (game.time % 600 === 0 && game.resources.length < 15) {
-                game.resources.push(new Resource(
-                    Math.random() * MAP_WIDTH,
-                    Math.random() * MAP_HEIGHT,
-                    'gold'
-                ));
-            }
-            
-            // Update UI
-            if (game.time % 30 === 0) {
-                updateUI();
-            }
-        }
-        
-        function render() {
-            // Clear canvas
-            ctx.fillStyle = '#2F1B14';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw terrain (simple grass background)
-            for (let x = 0; x < Math.ceil(canvas.width / TILE_SIZE) + 1; x++) {
-                for (let y = 0; y < Math.ceil(canvas.height / TILE_SIZE) + 1; y++) {
-                    const worldX = Math.floor(camera.x) + x;
-                    const worldY = Math.floor(camera.y) + y;
-                    
-                    if (worldX >= 0 && worldX < MAP_WIDTH && worldY >= 0 && worldY < MAP_HEIGHT) {
-                        const screenX = x * TILE_SIZE - ((camera.x % 1) * TILE_SIZE);
-                        const screenY = y * TILE_SIZE - ((camera.y % 1) * TILE_SIZE);
-                        
-                        // Simple terrain variation
-                        let tileType = 'GRASS';
-                        if (Math.random() < 0.1) tileType = 'DIRT';
-                        if (Math.random() < 0.05) tileType = 'STONE';
-                        
-                        drawTile(tileType, screenX, screenY);
-                    }
-                }
-            }
-            
-            // Draw resources
-            game.resources.forEach(resource => resource.draw());
-            
-            // Draw buildings
-            game.buildings.forEach(building => building.draw());
-            
-            // Draw dwarfs
-            game.dwarfs.forEach(dwarf => dwarf.draw());
-            
-            // Draw grid (optional, for debugging)
-            if (false) { // Set to true to show grid
+            // Draw grid
+            if (showGrid) {
                 drawGrid();
+            }
+            
+            // Draw selection
+            if (selectedTileX >= 0 && selectedTileY >= 0) {
+                drawSelection(selectedTileX, selectedTileY);
             }
         }
         
         function drawGrid() {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.lineWidth = 1;
+            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
+            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
             
-            for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
+            tilesetCtx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+            tilesetCtx.lineWidth = 1;
+            
+            // Vertical lines
+            for (let x = 0; x <= cols; x++) {
+                const screenX = (OFFSET_X + x * TILE_SIZE) * zoom;
+                tilesetCtx.beginPath();
+                tilesetCtx.moveTo(screenX, 0);
+                tilesetCtx.lineTo(screenX, tilesetCanvas.height);
+                tilesetCtx.stroke();
             }
             
-            for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-        }
-        
-        // ===========================================
-        // USER INTERFACE
-        // ===========================================
-        
-        function updateUI() {
-            document.getElementById('goldCount').textContent = game.gold;
-            document.getElementById('dwarfCount').textContent = game.dwarfs.length;
-            document.getElementById('buildingCount').textContent = game.buildings.length;
-            document.getElementById('resourceCount').textContent = game.resources.length;
-            
-            // Update button states
-            document.getElementById('buildBtn').disabled = game.gold < 100;
-        }
-        
-        function addLog(message, type = '') {
-            const logDiv = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            entry.textContent = `[${Math.floor(game.time / 60)}s] ${message}`;
-            
-            logDiv.appendChild(entry);
-            logDiv.scrollTop = logDiv.scrollHeight;
-            
-            // Keep only last 20 entries
-            while (logDiv.children.length > 21) { // +1 for the title
-                logDiv.removeChild(logDiv.children[1]);
+            // Horizontal lines
+            for (let y = 0; y <= rows; y++) {
+                const screenY = (OFFSET_Y + y * TILE_SIZE) * zoom;
+                tilesetCtx.beginPath();
+                tilesetCtx.moveTo(0, screenY);
+                tilesetCtx.lineTo(tilesetCanvas.width, screenY);
+                tilesetCtx.stroke();
             }
         }
         
-        // ===========================================
-        // USER ACTIONS
-        // ===========================================
+        function drawSelection(tileX, tileY) {
+            tilesetCtx.strokeStyle = '#FFD700';
+            tilesetCtx.lineWidth = 3;
+            
+            const screenX = (OFFSET_X + tileX * TILE_SIZE) * zoom;
+            const screenY = (OFFSET_Y + tileY * TILE_SIZE) * zoom;
+            const screenSize = TILE_SIZE * zoom;
+            
+            tilesetCtx.strokeRect(screenX, screenY, screenSize, screenSize);
+        }
         
-        function spawnDwarf() {
-            if (game.gold >= 50) {
-                game.gold -= 50;
-                const newDwarf = new Dwarf(
-                    MAP_WIDTH / 2 + Math.random() * 4 - 2,
-                    MAP_HEIGHT / 2 + Math.random() * 4 - 2
-                );
-                game.dwarfs.push(newDwarf);
-                addLog(`👤 ${newDwarf.name} joined the colony!`, 'success');
+        function onTilesetClick(e) {
+            const rect = tilesetCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const tileX = Math.floor((mouseX / zoom - OFFSET_X) / TILE_SIZE);
+            const tileY = Math.floor((mouseY / zoom - OFFSET_Y) / TILE_SIZE);
+            
+            // Make sure we're within valid bounds
+            if (tileX >= 0 && tileY >= 0) {
+                selectTile(tileX, tileY);
             }
         }
         
-        function buildHouse() {
-            if (game.gold >= 100) {
-                game.gold -= 100;
-                const building = new Building(
-                    MAP_WIDTH / 2 + game.buildings.length * 2,
-                    MAP_HEIGHT / 2 - 3,
-                    'house'
-                );
-                game.buildings.push(building);
+        function onTilesetMouseMove(e) {
+            const rect = tilesetCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const tileX = Math.floor(mouseX / (TILE_SIZE * zoom));
+            const tileY = Math.floor(mouseY / (TILE_SIZE * zoom));
+            
+            // Update tooltip or status (optional)
+        }
+        
+        function selectTile(tileX, tileY) {
+            selectedTileX = tileX;
+            selectedTileY = tileY;
+            
+            // Update coordinate display
+            document.getElementById('coordDisplay').textContent = `x: ${tileX}, y: ${tileY}`;
+            
+            // Update preview
+            updatePreview(tileX, tileY);
+            
+            // Re-render to show selection
+            renderTileset();
+        }
+        
+        function updatePreview(tileX, tileY) {
+            if (!tilesetImage) return;
+            
+            previewCtx.clearRect(0, 0, 64, 64);
+            
+            const sourceX = OFFSET_X + tileX * TILE_SIZE;
+            const sourceY = OFFSET_Y + tileY * TILE_SIZE;
+            
+            // Make sure we don't go out of bounds
+            if (sourceX >= 0 && sourceY >= 0 && 
+                sourceX + TILE_SIZE <= tilesetImage.width && 
+                sourceY + TILE_SIZE <= tilesetImage.height) {
                 
-                // Assign a dwarf to build it
-                const availableDwarf = game.dwarfs.find(d => d.task === 'idle' || d.task === 'wandering');
-                if (availableDwarf) {
-                    availableDwarf.targetX = building.x;
-                    availableDwarf.targetY = building.y;
-                    availableDwarf.task = 'building';
-                    availableDwarf.workTimer = 180;
-                    addLog(`🔨 ${availableDwarf.name} is building a house!`);
-                } else {
-                    addLog('🏠 House built!', 'success');
+                previewCtx.drawImage(
+                    tilesetImage,
+                    sourceX, sourceY, TILE_SIZE, TILE_SIZE,
+                    0, 0, 64, 64
+                );
+            }
+        }
+        
+        function populateSpriteSuggestions() {
+            const container = document.getElementById('spriteSuggestions');
+            container.innerHTML = '';
+            
+            SPRITE_SUGGESTIONS.forEach((sprite, index) => {
+                const div = document.createElement('div');
+                div.className = 'sprite-suggestion';
+                div.innerHTML = `
+                    <div class="sprite-name">${sprite.name}</div>
+                    <div class="sprite-coord">x: ${sprite.x}, y: ${sprite.y}</div>
+                    <div class="sprite-desc">${sprite.desc}</div>
+                `;
+                
+                div.addEventListener('click', () => {
+                    selectTile(sprite.x, sprite.y);
+                    
+                    // Highlight this suggestion
+                    document.querySelectorAll('.sprite-suggestion').forEach(s => s.classList.remove('active'));
+                    div.classList.add('active');
+                });
+                
+                container.appendChild(div);
+            });
+        }
+        
+        function changeZoom(newZoom) {
+            zoom = newZoom;
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            renderTileset();
+        }
+        
+        function updateTileSize() {
+            TILE_SIZE = parseInt(document.getElementById('tileSizeInput').value);
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function adjustTileSize(delta) {
+            TILE_SIZE = Math.max(8, Math.min(64, TILE_SIZE + delta));
+            document.getElementById('tileSizeInput').value = TILE_SIZE;
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function updateOffsets() {
+            OFFSET_X = parseFloat(document.getElementById('offsetXInput').value) || 0;
+            OFFSET_Y = parseFloat(document.getElementById('offsetYInput').value) || 0;
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function adjustOffset(axis, delta) {
+            if (axis === 'x') {
+                OFFSET_X += delta;
+                document.getElementById('offsetXInput').value = OFFSET_X.toFixed(1);
+            } else {
+                OFFSET_Y += delta;
+                document.getElementById('offsetYInput').value = OFFSET_Y.toFixed(1);
+            }
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function resetAlignment() {
+            OFFSET_X = 0;
+            OFFSET_Y = 0;
+            document.getElementById('offsetXInput').value = OFFSET_X;
+            document.getElementById('offsetYInput').value = OFFSET_Y;
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function savePosition() {
+            const savedData = {
+                tileSize: TILE_SIZE,
+                offsetX: OFFSET_X,
+                offsetY: OFFSET_Y,
+                selectedX: selectedTileX,
+                selectedY: selectedTileY
+            };
+            
+            localStorage.setItem('tilesetSettings', JSON.stringify(savedData));
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Saved!';
+            btn.style.background = '#4CAF50';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '#2196F3';
+            }, 1500);
+        }
+        
+        function loadSavedPosition() {
+            const saved = localStorage.getItem('tilesetSettings');
+            if (saved) {
+                const data = JSON.parse(saved);
+                TILE_SIZE = data.tileSize || 16;
+                OFFSET_X = data.offsetX || 0;
+                OFFSET_Y = data.offsetY || 0;
+                
+                document.getElementById('tileSizeInput').value = TILE_SIZE;
+                document.getElementById('offsetXInput').value = OFFSET_X;
+                document.getElementById('offsetYInput').value = OFFSET_Y;
+                
+                if (data.selectedX >= 0 && data.selectedY >= 0) {
+                    selectTile(data.selectedX, data.selectedY);
                 }
+                
+                console.log('📂 Loaded saved settings:', data);
             }
         }
         
-        function resetGame() {
-            game.gold = 50;
-            game.dwarfs = [];
-            game.buildings = [];
-            game.resources = [];
-            game.time = 0;
-            
-            // Clear log
-            const logDiv = document.getElementById('log');
-            while (logDiv.children.length > 1) {
-                logDiv.removeChild(logDiv.lastChild);
-            }
-            
-            initializeGame();
-            addLog('🔄 Colony reset!', 'important');
+        function toggleGrid() {
+            showGrid = document.getElementById('showGridCheckbox').checked;
+            renderTileset();
         }
         
-        // ===========================================
-        // INITIALIZATION
-        // ===========================================
-        
-        function init() {
-            console.log('🚀 Starting Simple Dwarf Colony...');
+        function generateCode() {
+            let code = '// Generated TILE_MAP from Sprite Picker\n';
+            code += 'const TILE_MAP = {\n';
             
-            // Get canvas
-            canvas = document.getElementById('gameCanvas');
-            ctx = canvas.getContext('2d');
-            
-            if (!canvas || !ctx) {
-                console.error('❌ Failed to initialize canvas');
-                return;
+            // Add selected sprites
+            if (selectedTileX >= 0 && selectedTileY >= 0) {
+                code += `    SELECTED: { x: ${selectedTileX}, y: ${selectedTileY} },\n`;
             }
             
-            console.log('✅ Canvas initialized');
+            // Add suggestions that might be useful
+            SPRITE_SUGGESTIONS.forEach(sprite => {
+                code += `    ${sprite.name}: { x: ${sprite.x}, y: ${sprite.y} }, // ${sprite.desc}\n`;
+            });
             
-            // Load tileset (this will initialize the game when ready)
-            loadTileset();
+            code += '};';
+            
+            document.getElementById('codeOutput').value = code;
+            
+            // Auto-select the text for easy copying
+            document.getElementById('codeOutput').select();
         }
         
-        // Start when page loads
+        // Initialize when page loads
         window.addEventListener('load', init);
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            // Could implement canvas resizing here if needed
-        });
-        
-        // Keyboard controls (optional)
-        window.addEventListener('keydown', (e) => {
-            const speed = 2;
-            switch(e.key) {
-                case 'ArrowUp': camera.y = Math.max(0, camera.y - speed); break;
-                case 'ArrowDown': camera.y = Math.min(MAP_HEIGHT - 20, camera.y + speed); break;
-                case 'ArrowLeft': camera.x = Math.max(0, camera.x - speed); break;
-                case 'ArrowRight': camera.x = Math.min(MAP_WIDTH - 20, camera.x + speed); break;
-            }
-        });
-        
-        console.log('📋 Instructions:');
-        console.log('1. Upload your tileset PNG to GitHub');
-        console.log('2. Copy the raw GitHub URL');
-        console.log('3. Update TILESET_URL in the code');
-        console.log('4. Adjust TILE_MAP coordinates to match your tileset');
-        console.log('5. Use arrow keys to move camera around');
     </script>
 </body>
 </html>
