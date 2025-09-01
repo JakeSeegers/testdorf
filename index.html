@@ -3,632 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎨 Tileset Sprite Picker Tool</title>
+    <title>One-bit Tileset Viewer</title>
     <style>
         body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 20px;
-            background: #1a1a1a;
-            font-family: 'Courier New', monospace;
-            color: #fff;
-            min-height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            flex-direction: column;
+            gap: 20px;
         }
         
+        canvas {
+            background-color: #333333;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            image-rendering: pixelated;
+        }
+
         .container {
             display: flex;
-            gap: 20px;
-            max-width: 1600px;
-            margin: 0 auto;
+            flex-direction: column;
+            align-items: center;
         }
-        
-        .left-panel {
-            flex: 1;
-            max-width: 800px;
+
+        h1 {
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
-        
-        .right-panel {
-            width: 350px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #4CAF50;
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-        }
-        
-        #title {
+
+        p {
+            font-size: 1rem;
             text-align: center;
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #4CAF50;
-            text-shadow: 0 0 10px #4CAF50;
-        }
-        
-        #tilesetCanvas {
-            border: 2px solid #4CAF50;
-            background: #000;
-            cursor: crosshair;
-            display: block;
-            margin: 0 auto;
-            image-rendering: pixelated;
-        }
-        
-        .info-section {
-            background: rgba(76, 175, 80, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border: 1px solid #4CAF50;
-        }
-        
-        .info-section h3 {
-            margin-top: 0;
-            color: #4CAF50;
-        }
-        
-        .coord-display {
-            font-size: 18px;
-            font-weight: bold;
-            color: #FFD700;
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        
-        .preview-tile {
-            width: 64px;
-            height: 64px;
-            border: 2px solid #4CAF50;
-            margin: 10px auto;
-            image-rendering: pixelated;
-            background: #333;
-        }
-        
-        .suggestions {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .sprite-suggestion {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 4px;
-            border-left: 3px solid #4CAF50;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .sprite-suggestion:hover {
-            background: rgba(76, 175, 80, 0.2);
-            transform: translateX(5px);
-        }
-        
-        .sprite-suggestion.active {
-            background: rgba(76, 175, 80, 0.3);
-            border-left-color: #FFD700;
-        }
-        
-        .sprite-name {
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        
-        .sprite-coord {
-            color: #FFD700;
-            font-size: 12px;
-        }
-        
-        .sprite-desc {
-            color: #ccc;
-            font-size: 11px;
-            margin-top: 2px;
-        }
-        
-        .controls {
-            margin: 15px 0;
-        }
-        
-        input, select {
-            background: #333;
-            border: 1px solid #555;
-            color: #fff;
-            padding: 5px;
-            margin: 2px;
-            border-radius: 3px;
-        }
-        
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin: 4px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        
-        button:hover {
-            background: #45a049;
-        }
-        
-        #codeOutput {
-            background: #000;
-            border: 1px solid #555;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .zoom-controls {
-            text-align: center;
-            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <div id="title">🎨 Tileset Sprite Picker Tool 🔍</div>
-    
+
     <div class="container">
-        <div class="left-panel">
-            <div class="zoom-controls">
-                <label>Zoom: </label>
-                <button onclick="changeZoom(0.5)">50%</button>
-                <button onclick="changeZoom(1)">100%</button>
-                <button onclick="changeZoom(2)">200%</button>
-                <button onclick="changeZoom(3)">300%</button>
-                <span id="zoomLevel">200%</span>
-            </div>
-            
-            <canvas id="tilesetCanvas"></canvas>
-            
-            <div style="text-align: center; margin: 15px 0; color: #aaa;">
-                🖱️ Click on any tile to select it and see its coordinates
-            </div>
-        </div>
-        
-        <div class="right-panel">
-            <div class="info-section">
-                <h3>📍 Selected Tile</h3>
-                <div class="coord-display" id="coordDisplay">
-                    Click a tile to select
-                </div>
-                <canvas id="previewCanvas" class="preview-tile" width="64" height="64"></canvas>
-            </div>
-            
-            <div class="info-section">
-                <h3>⚙️ Tileset Info</h3>
-                <div id="tilesetInfo">Loading...</div>
-                <div class="controls">
-                    <label>Tile Size: </label>
-                    <input type="number" id="tileSizeInput" value="16" min="8" max="64" step="1" onchange="updateTileSize()">
-                    <button onclick="adjustTileSize(-1)" style="font-size: 11px; padding: 2px 6px;">-</button>
-                    <button onclick="adjustTileSize(1)" style="font-size: 11px; padding: 2px 6px;">+</button>
-                    <br><br>
-                    
-                    <label>Fine-Tune Grid Position:</label><br>
-                    <div style="display: flex; align-items: center; gap: 5px; margin: 5px 0;">
-                        <span style="width: 20px;">X:</span>
-                        <button onclick="adjustOffset('x', -1)" style="font-size: 11px; padding: 2px 6px;">←</button>
-                        <input type="number" id="offsetXInput" value="0" min="-50" max="50" step="0.1" onchange="updateOffsets()" style="width: 50px;">
-                        <button onclick="adjustOffset('x', 1)" style="font-size: 11px; padding: 2px 6px;">→</button>
-                    </div>
-                    
-                    <div style="display: flex; align-items: center; gap: 5px; margin: 5px 0;">
-                        <span style="width: 20px;">Y:</span>
-                        <button onclick="adjustOffset('y', -1)" style="font-size: 11px; padding: 2px 6px;">↑</button>
-                        <input type="number" id="offsetYInput" value="0" min="-50" max="50" step="0.1" onchange="updateOffsets()" style="width: 50px;">
-                        <button onclick="adjustOffset('y', 1)" style="font-size: 11px; padding: 2px 6px;">↓</button>
-                    </div>
-                    
-                    <div style="margin: 10px 0;">
-                        <button onclick="adjustOffset('x', -0.1)" style="font-size: 10px; padding: 2px 4px;">◀ 0.1</button>
-                        <button onclick="adjustOffset('x', 0.1)" style="font-size: 10px; padding: 2px 4px;">0.1 ▶</button>
-                        <button onclick="adjustOffset('y', -0.1)" style="font-size: 10px; padding: 2px 4px;">▲ 0.1</button>
-                        <button onclick="adjustOffset('y', 0.1)" style="font-size: 10px; padding: 2px 4px;">0.1 ▼</button>
-                    </div>
-                    
-                    <label>Grid: </label>
-                    <input type="checkbox" id="showGridCheckbox" checked onchange="toggleGrid()"> Show Grid
-                    <br>
-                    <button onclick="resetAlignment()" style="font-size: 11px; padding: 4px 8px; margin-top: 5px;">🎯 Reset to 0,0</button>
-                    <button onclick="savePosition()" style="font-size: 11px; padding: 4px 8px; background: #2196F3;">💾 Save Position</button>
-                </div>
-            </div>
-            
-            <div class="info-section suggestions">
-                <h3>💡 Sprite Suggestions</h3>
-                <div id="spriteSuggestions">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
-            
-            <div class="info-section">
-                <h3>📋 Code Output</h3>
-                <button onclick="generateCode()">🔧 Generate TILE_MAP Code</button>
-                <textarea id="codeOutput" rows="8" readonly></textarea>
-            </div>
-        </div>
+        <h1>One-bit Tileset Viewer</h1>
+        <p>Loading the tileset image...</p>
+        <canvas id="gameCanvas"></canvas>
     </div>
 
     <script>
-        // Configuration
-        const TILESET_URL = 'https://raw.githubusercontent.com/JakeSeegers/testdorf/main/urizen_onebit_tileset__v2d0.png';
-        let TILE_SIZE = 16;
-        let OFFSET_X = 0;
-        let OFFSET_Y = 0;
-        let zoom = 2;
-        let showGrid = true;
-        
-        // Canvas references
-        let tilesetCanvas, tilesetCtx, previewCanvas, previewCtx;
-        let tilesetImage = null;
-        let selectedTileX = -1, selectedTileY = -1;
-        let selectedSprites = new Map();
-        
-        // Suggested sprite locations (I'll analyze your tileset)
-        const SPRITE_SUGGESTIONS = [
-            // Characters - Row 0-2 area
-            { name: 'DWARF_MALE', x: 0, y: 0, desc: 'Male dwarf character facing down' },
-            { name: 'DWARF_FEMALE', x: 1, y: 0, desc: 'Female dwarf character' },
-            { name: 'DWARF_WORKER', x: 2, y: 0, desc: 'Dwarf with tools/working' },
-            { name: 'DWARF_MINER', x: 3, y: 0, desc: 'Dwarf with pickaxe' },
+        window.onload = function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
             
-            // Terrain - Usually in top-left area
-            { name: 'GRASS', x: 0, y: 10, desc: 'Grass terrain tile' },
-            { name: 'DIRT', x: 1, y: 10, desc: 'Dirt/earth terrain' },
-            { name: 'STONE', x: 2, y: 10, desc: 'Stone floor' },
-            { name: 'WATER', x: 3, y: 10, desc: 'Water tile' },
-            { name: 'TREE', x: 4, y: 10, desc: 'Tree/forest tile' },
-            
-            // Buildings - Usually middle area
-            { name: 'HOUSE', x: 0, y: 20, desc: 'Simple house/dwelling' },
-            { name: 'WORKSHOP', x: 1, y: 20, desc: 'Workshop building' },
-            { name: 'MINE_ENTRANCE', x: 2, y: 20, desc: 'Mine entrance' },
-            { name: 'STORAGE', x: 3, y: 20, desc: 'Storage building' },
-            
-            // Resources/Items - Usually scattered
-            { name: 'GOLD_ORE', x: 0, y: 30, desc: 'Gold ore deposit' },
-            { name: 'FOOD', x: 1, y: 30, desc: 'Food/bread' },
-            { name: 'TOOLS', x: 2, y: 30, desc: 'Tools/equipment' },
-            { name: 'CHEST', x: 3, y: 30, desc: 'Treasure chest' },
-            
-            // Effects
-            { name: 'SPARKLE', x: 0, y: 35, desc: 'Magic sparkle effect' },
-            { name: 'SELECTION', x: 1, y: 35, desc: 'Selection highlight' }
-        ];
-        
-        function init() {
-            console.log('🎨 Initializing Sprite Picker...');
-            
-            // Get canvas elements
-            tilesetCanvas = document.getElementById('tilesetCanvas');
-            tilesetCtx = tilesetCanvas.getContext('2d');
-            previewCanvas = document.getElementById('previewCanvas');
-            previewCtx = previewCanvas.getContext('2d');
-            
-            // Set image rendering
-            tilesetCtx.imageSmoothingEnabled = false;
-            previewCtx.imageSmoothingEnabled = false;
-            
-            // Load tileset
-            loadTileset();
-            
-            // Setup event listeners
-            tilesetCanvas.addEventListener('click', onTilesetClick);
-            tilesetCanvas.addEventListener('mousemove', onTilesetMouseMove);
-            
-            // Populate suggestions
-            populateSpriteSuggestions();
-        }
-        
-        function loadTileset() {
-            console.log('📦 Loading tileset...');
-            
-            tilesetImage = new Image();
-            tilesetImage.crossOrigin = 'anonymous';
-            
-            tilesetImage.onload = function() {
-                console.log('✅ Tileset loaded!');
-                console.log('📐 Dimensions:', tilesetImage.width, 'x', tilesetImage.height);
-                
-                updateOffsets(); // Initialize offsets
-                updateTilesetInfo();
-                renderTileset();
-            };
-            
-            tilesetImage.onerror = function() {
-                console.error('❌ Failed to load tileset');
-                document.getElementById('tilesetInfo').textContent = '❌ Failed to load tileset';
-            };
-            
-            tilesetImage.src = TILESET_URL;
-        }
-        
-        function updateTilesetInfo() {
-            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
-            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
-            
-            document.getElementById('tilesetInfo').innerHTML = `
-                📐 Image: ${tilesetImage.width} × ${tilesetImage.height}px<br>
-                🔲 Tile Size: ${TILE_SIZE}px<br>
-                📍 Offset: ${OFFSET_X}, ${OFFSET_Y}px<br>
-                📊 Grid: ${cols} × ${rows} tiles<br>
-                🎯 Total Tiles: ${cols * rows}
-            `;
-        }
-        
-        function renderTileset() {
-            if (!tilesetImage) return;
-            
-            const displayWidth = tilesetImage.width * zoom;
-            const displayHeight = tilesetImage.height * zoom;
-            
-            tilesetCanvas.width = displayWidth;
-            tilesetCanvas.height = displayHeight;
-            
-            // Draw the tileset
-            tilesetCtx.drawImage(tilesetImage, 0, 0, displayWidth, displayHeight);
-            
-            // Draw grid
-            if (showGrid) {
-                drawGrid();
-            }
-            
-            // Draw selection
-            if (selectedTileX >= 0 && selectedTileY >= 0) {
-                drawSelection(selectedTileX, selectedTileY);
-            }
-        }
-        
-        function drawGrid() {
-            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
-            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
-            
-            tilesetCtx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
-            tilesetCtx.lineWidth = 1;
-            
-            // Vertical lines
-            for (let x = 0; x <= cols; x++) {
-                const screenX = (OFFSET_X + x * TILE_SIZE) * zoom;
-                tilesetCtx.beginPath();
-                tilesetCtx.moveTo(screenX, 0);
-                tilesetCtx.lineTo(screenX, tilesetCanvas.height);
-                tilesetCtx.stroke();
-            }
-            
-            // Horizontal lines
-            for (let y = 0; y <= rows; y++) {
-                const screenY = (OFFSET_Y + y * TILE_SIZE) * zoom;
-                tilesetCtx.beginPath();
-                tilesetCtx.moveTo(0, screenY);
-                tilesetCtx.lineTo(tilesetCanvas.width, screenY);
-                tilesetCtx.stroke();
-            }
-        }
-        
-        function drawSelection(tileX, tileY) {
-            tilesetCtx.strokeStyle = '#FFD700';
-            tilesetCtx.lineWidth = 3;
-            
-            const screenX = (OFFSET_X + tileX * TILE_SIZE) * zoom;
-            const screenY = (OFFSET_Y + tileY * TILE_SIZE) * zoom;
-            const screenSize = TILE_SIZE * zoom;
-            
-            tilesetCtx.strokeRect(screenX, screenY, screenSize, screenSize);
-        }
-        
-        function onTilesetClick(e) {
-            const rect = tilesetCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            const tileX = Math.floor((mouseX / zoom - OFFSET_X) / TILE_SIZE);
-            const tileY = Math.floor((mouseY / zoom - OFFSET_Y) / TILE_SIZE);
-            
-            // Make sure we're within valid bounds
-            if (tileX >= 0 && tileY >= 0) {
-                selectTile(tileX, tileY);
-            }
-        }
-        
-        function onTilesetMouseMove(e) {
-            const rect = tilesetCanvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            const tileX = Math.floor(mouseX / (TILE_SIZE * zoom));
-            const tileY = Math.floor(mouseY / (TILE_SIZE * zoom));
-            
-            // Update tooltip or status (optional)
-        }
-        
-        function selectTile(tileX, tileY) {
-            selectedTileX = tileX;
-            selectedTileY = tileY;
-            
-            // Update coordinate display
-            document.getElementById('coordDisplay').textContent = `x: ${tileX}, y: ${tileY}`;
-            
-            // Update preview
-            updatePreview(tileX, tileY);
-            
-            // Re-render to show selection
-            renderTileset();
-        }
-        
-        function updatePreview(tileX, tileY) {
-            if (!tilesetImage) return;
-            
-            previewCtx.clearRect(0, 0, 64, 64);
-            
-            const sourceX = OFFSET_X + tileX * TILE_SIZE;
-            const sourceY = OFFSET_Y + tileY * TILE_SIZE;
-            
-            // Make sure we don't go out of bounds
-            if (sourceX >= 0 && sourceY >= 0 && 
-                sourceX + TILE_SIZE <= tilesetImage.width && 
-                sourceY + TILE_SIZE <= tilesetImage.height) {
-                
-                previewCtx.drawImage(
-                    tilesetImage,
-                    sourceX, sourceY, TILE_SIZE, TILE_SIZE,
-                    0, 0, 64, 64
-                );
-            }
-        }
-        
-        function populateSpriteSuggestions() {
-            const container = document.getElementById('spriteSuggestions');
-            container.innerHTML = '';
-            
-            SPRITE_SUGGESTIONS.forEach((sprite, index) => {
-                const div = document.createElement('div');
-                div.className = 'sprite-suggestion';
-                div.innerHTML = `
-                    <div class="sprite-name">${sprite.name}</div>
-                    <div class="sprite-coord">x: ${sprite.x}, y: ${sprite.y}</div>
-                    <div class="sprite-desc">${sprite.desc}</div>
-                `;
-                
-                div.addEventListener('click', () => {
-                    selectTile(sprite.x, sprite.y);
-                    
-                    // Highlight this suggestion
-                    document.querySelectorAll('.sprite-suggestion').forEach(s => s.classList.remove('active'));
-                    div.classList.add('active');
-                });
-                
-                container.appendChild(div);
-            });
-        }
-        
-        function changeZoom(newZoom) {
-            zoom = newZoom;
-            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-            renderTileset();
-        }
-        
-        function updateTileSize() {
-            TILE_SIZE = parseInt(document.getElementById('tileSizeInput').value);
-            updateTilesetInfo();
-            renderTileset();
-        }
-        
-        function adjustTileSize(delta) {
-            TILE_SIZE = Math.max(8, Math.min(64, TILE_SIZE + delta));
-            document.getElementById('tileSizeInput').value = TILE_SIZE;
-            updateTilesetInfo();
-            renderTileset();
-        }
-        
-        function updateOffsets() {
-            OFFSET_X = parseFloat(document.getElementById('offsetXInput').value) || 0;
-            OFFSET_Y = parseFloat(document.getElementById('offsetYInput').value) || 0;
-            updateTilesetInfo();
-            renderTileset();
-        }
-        
-        function adjustOffset(axis, delta) {
-            if (axis === 'x') {
-                OFFSET_X += delta;
-                document.getElementById('offsetXInput').value = OFFSET_X.toFixed(1);
-            } else {
-                OFFSET_Y += delta;
-                document.getElementById('offsetYInput').value = OFFSET_Y.toFixed(1);
-            }
-            updateTilesetInfo();
-            renderTileset();
-        }
-        
-        function resetAlignment() {
-            OFFSET_X = 0;
-            OFFSET_Y = 0;
-            document.getElementById('offsetXInput').value = OFFSET_X;
-            document.getElementById('offsetYInput').value = OFFSET_Y;
-            updateTilesetInfo();
-            renderTileset();
-        }
-        
-        function savePosition() {
-            const savedData = {
-                tileSize: TILE_SIZE,
-                offsetX: OFFSET_X,
-                offsetY: OFFSET_Y,
-                selectedX: selectedTileX,
-                selectedY: selectedTileY
-            };
-            
-            localStorage.setItem('tilesetSettings', JSON.stringify(savedData));
-            
-            // Visual feedback
-            const btn = event.target;
-            const originalText = btn.textContent;
-            btn.textContent = '✅ Saved!';
-            btn.style.background = '#4CAF50';
-            
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = '#2196F3';
-            }, 1500);
-        }
-        
-        function loadSavedPosition() {
-            const saved = localStorage.getItem('tilesetSettings');
-            if (saved) {
-                const data = JSON.parse(saved);
-                TILE_SIZE = data.tileSize || 16;
-                OFFSET_X = data.offsetX || 0;
-                OFFSET_Y = data.offsetY || 0;
-                
-                document.getElementById('tileSizeInput').value = TILE_SIZE;
-                document.getElementById('offsetXInput').value = OFFSET_X;
-                document.getElementById('offsetYInput').value = OFFSET_Y;
-                
-                if (data.selectedX >= 0 && data.selectedY >= 0) {
-                    selectTile(data.selectedX, data.selectedY);
+            // Set canvas size for better viewing
+            const scale = 8;
+            canvas.width = 64 * scale;
+            canvas.height = 64 * scale;
+
+            // Image path provided by the user
+            // The file path has been updated to correctly reference the uploaded file.
+            const tilesetPath = 'uploaded://urizen_onebit_tileset__v2d0.jpg';
+
+            const tilesetImage = new Image();
+            tilesetImage.src = tilesetPath;
+
+            tilesetImage.onload = () => {
+                try {
+                    // Draw the entire tileset image onto the canvas, scaled up
+                    // This is useful for debugging and viewing the whole spritesheet
+                    ctx.drawImage(tilesetImage, 0, 0, canvas.width, canvas.height);
+                    console.log("Tileset image loaded and drawn successfully.");
+                    document.querySelector('p').textContent = "Tileset loaded successfully.";
+                } catch (error) {
+                    console.error("Error drawing image to canvas:", error);
+                    document.querySelector('p').textContent = "Error drawing image. Check the browser console.";
                 }
-                
-                console.log('📂 Loaded saved settings:', data);
-            }
-        }
-        
-        function toggleGrid() {
-            showGrid = document.getElementById('showGridCheckbox').checked;
-            renderTileset();
-        }
-        
-        function generateCode() {
-            let code = '// Generated TILE_MAP from Sprite Picker\n';
-            code += 'const TILE_MAP = {\n';
-            
-            // Add selected sprites
-            if (selectedTileX >= 0 && selectedTileY >= 0) {
-                code += `    SELECTED: { x: ${selectedTileX}, y: ${selectedTileY} },\n`;
-            }
-            
-            // Add suggestions that might be useful
-            SPRITE_SUGGESTIONS.forEach(sprite => {
-                code += `    ${sprite.name}: { x: ${sprite.x}, y: ${sprite.y} }, // ${sprite.desc}\n`;
-            });
-            
-            code += '};';
-            
-            document.getElementById('codeOutput').value = code;
-            
-            // Auto-select the text for easy copying
-            document.getElementById('codeOutput').select();
-        }
-        
-        // Initialize when page loads
-        window.addEventListener('load', init);
+            };
+
+            tilesetImage.onerror = () => {
+                console.error("Failed to load image:", tilesetPath);
+                document.querySelector('p').textContent = "Failed to load the image. Please check the file path.";
+            };
+        };
     </script>
+
 </body>
 </html>
