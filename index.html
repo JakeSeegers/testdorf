@@ -210,8 +210,16 @@
                     <label>Tile Size: </label>
                     <input type="number" id="tileSizeInput" value="16" min="8" max="64" onchange="updateTileSize()">
                     <br>
+                    <label>Grid Offset X: </label>
+                    <input type="number" id="offsetXInput" value="0" min="-32" max="32" onchange="updateOffsets()">
+                    <br>
+                    <label>Grid Offset Y: </label>
+                    <input type="number" id="offsetYInput" value="0" min="-32" max="32" onchange="updateOffsets()">
+                    <br>
                     <label>Grid: </label>
                     <input type="checkbox" id="showGridCheckbox" checked onchange="toggleGrid()"> Show Grid
+                    <br>
+                    <button onclick="resetAlignment()" style="font-size: 11px; padding: 4px 8px;">🎯 Auto-Align</button>
                 </div>
             </div>
             
@@ -234,6 +242,8 @@
         // Configuration
         const TILESET_URL = 'https://raw.githubusercontent.com/JakeSeegers/testdorf/main/urizen_onebit_tileset__v2d0.png';
         let TILE_SIZE = 16;
+        let OFFSET_X = 0;
+        let OFFSET_Y = 0;
         let zoom = 2;
         let showGrid = true;
         
@@ -322,12 +332,13 @@
         }
         
         function updateTilesetInfo() {
-            const cols = Math.floor(tilesetImage.width / TILE_SIZE);
-            const rows = Math.floor(tilesetImage.height / TILE_SIZE);
+            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
+            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
             
             document.getElementById('tilesetInfo').innerHTML = `
                 📐 Image: ${tilesetImage.width} × ${tilesetImage.height}px<br>
                 🔲 Tile Size: ${TILE_SIZE}px<br>
+                📍 Offset: ${OFFSET_X}, ${OFFSET_Y}px<br>
                 📊 Grid: ${cols} × ${rows} tiles<br>
                 🎯 Total Tiles: ${cols * rows}
             `;
@@ -357,15 +368,15 @@
         }
         
         function drawGrid() {
-            const cols = Math.floor(tilesetImage.width / TILE_SIZE);
-            const rows = Math.floor(tilesetImage.height / TILE_SIZE);
+            const cols = Math.floor((tilesetImage.width - OFFSET_X) / TILE_SIZE);
+            const rows = Math.floor((tilesetImage.height - OFFSET_Y) / TILE_SIZE);
             
             tilesetCtx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
             tilesetCtx.lineWidth = 1;
             
             // Vertical lines
             for (let x = 0; x <= cols; x++) {
-                const screenX = x * TILE_SIZE * zoom;
+                const screenX = (OFFSET_X + x * TILE_SIZE) * zoom;
                 tilesetCtx.beginPath();
                 tilesetCtx.moveTo(screenX, 0);
                 tilesetCtx.lineTo(screenX, tilesetCanvas.height);
@@ -374,7 +385,7 @@
             
             // Horizontal lines
             for (let y = 0; y <= rows; y++) {
-                const screenY = y * TILE_SIZE * zoom;
+                const screenY = (OFFSET_Y + y * TILE_SIZE) * zoom;
                 tilesetCtx.beginPath();
                 tilesetCtx.moveTo(0, screenY);
                 tilesetCtx.lineTo(tilesetCanvas.width, screenY);
@@ -386,8 +397,8 @@
             tilesetCtx.strokeStyle = '#FFD700';
             tilesetCtx.lineWidth = 3;
             
-            const screenX = tileX * TILE_SIZE * zoom;
-            const screenY = tileY * TILE_SIZE * zoom;
+            const screenX = (OFFSET_X + tileX * TILE_SIZE) * zoom;
+            const screenY = (OFFSET_Y + tileY * TILE_SIZE) * zoom;
             const screenSize = TILE_SIZE * zoom;
             
             tilesetCtx.strokeRect(screenX, screenY, screenSize, screenSize);
@@ -398,10 +409,13 @@
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
             
-            const tileX = Math.floor(mouseX / (TILE_SIZE * zoom));
-            const tileY = Math.floor(mouseY / (TILE_SIZE * zoom));
+            const tileX = Math.floor((mouseX / zoom - OFFSET_X) / TILE_SIZE);
+            const tileY = Math.floor((mouseY / zoom - OFFSET_Y) / TILE_SIZE);
             
-            selectTile(tileX, tileY);
+            // Make sure we're within valid bounds
+            if (tileX >= 0 && tileY >= 0) {
+                selectTile(tileX, tileY);
+            }
         }
         
         function onTilesetMouseMove(e) {
@@ -434,14 +448,20 @@
             
             previewCtx.clearRect(0, 0, 64, 64);
             
-            const sourceX = tileX * TILE_SIZE;
-            const sourceY = tileY * TILE_SIZE;
+            const sourceX = OFFSET_X + tileX * TILE_SIZE;
+            const sourceY = OFFSET_Y + tileY * TILE_SIZE;
             
-            previewCtx.drawImage(
-                tilesetImage,
-                sourceX, sourceY, TILE_SIZE, TILE_SIZE,
-                0, 0, 64, 64
-            );
+            // Make sure we don't go out of bounds
+            if (sourceX >= 0 && sourceY >= 0 && 
+                sourceX + TILE_SIZE <= tilesetImage.width && 
+                sourceY + TILE_SIZE <= tilesetImage.height) {
+                
+                previewCtx.drawImage(
+                    tilesetImage,
+                    sourceX, sourceY, TILE_SIZE, TILE_SIZE,
+                    0, 0, 64, 64
+                );
+            }
         }
         
         function populateSpriteSuggestions() {
@@ -479,6 +499,32 @@
             TILE_SIZE = parseInt(document.getElementById('tileSizeInput').value);
             updateTilesetInfo();
             renderTileset();
+        }
+        
+        function updateOffsets() {
+            OFFSET_X = parseInt(document.getElementById('offsetXInput').value) || 0;
+            OFFSET_Y = parseInt(document.getElementById('offsetYInput').value) || 0;
+            renderTileset();
+        }
+        
+        function resetAlignment() {
+            // Try some common offset values automatically
+            const commonOffsets = [
+                {x: 0, y: 0},   // No offset
+                {x: 1, y: 1},   // 1px border
+                {x: 2, y: 2},   // 2px border
+                {x: 1, y: 0},   // Left border only
+                {x: 0, y: 1},   // Top border only
+            ];
+            
+            // For now, just reset to 0,0 but could be made smarter
+            OFFSET_X = 0;
+            OFFSET_Y = 0;
+            document.getElementById('offsetXInput').value = OFFSET_X;
+            document.getElementById('offsetYInput').value = OFFSET_Y;
+            renderTileset();
+            
+            alert('🎯 Reset to 0,0. Try adjusting the offset values manually to align the grid with your tiles!');
         }
         
         function toggleGrid() {
