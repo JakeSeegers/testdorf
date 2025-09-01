@@ -3,89 +3,799 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>One-bit Tileset Viewer</title>
+    <title>🎯 Rectangle Sprite Picker - Like pygame.spritesheet!</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Courier New', Courier, monospace;
-            flex-direction: column;
-            gap: 20px;
+            padding: 20px;
+            background: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            min-height: 100vh;
         }
         
-        canvas {
-            background-color: #333333;
-            border: 2px solid #e0e0e0;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            image-rendering: pixelated;
-        }
-
         .container {
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
         }
-
-        h1 {
-            font-size: 2rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        
+        .left-panel {
+            flex: 1;
+            max-width: 800px;
         }
-
-        p {
-            font-size: 1rem;
+        
+        .right-panel {
+            width: 400px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #FF6B35;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+        
+        #title {
             text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #FF6B35;
+            text-shadow: 0 0 10px #FF6B35;
+        }
+        
+        #tilesetCanvas {
+            border: 2px solid #FF6B35;
+            background: #000;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+        }
+        
+        .info-section {
+            background: rgba(255, 107, 53, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #FF6B35;
+        }
+        
+        .info-section h3 {
+            margin-top: 0;
+            color: #FF6B35;
+        }
+        
+        .current-selection {
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFD700;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .preview-tile {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #FF6B35;
+            margin: 10px auto;
+            image-rendering: pixelated;
+            background: #333;
+        }
+        
+        .sprite-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .sprite-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 3px solid #FF6B35;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        
+        .sprite-item:hover {
+            background: rgba(255, 107, 53, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .sprite-item.selected {
+            background: rgba(255, 107, 53, 0.3);
+            border-left-color: #FFD700;
+        }
+        
+        .sprite-name {
+            font-weight: bold;
+            color: #FF6B35;
+        }
+        
+        .sprite-coords {
+            color: #FFD700;
+            font-size: 11px;
+        }
+        
+        .controls {
+            margin: 15px 0;
+        }
+        
+        input, select {
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 5px;
+            margin: 2px;
+            border-radius: 3px;
+            width: 80px;
+        }
+        
+        button {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        
+        button:hover {
+            background: #E55A2B;
+        }
+        
+        button.secondary {
+            background: #666;
+        }
+        
+        button.secondary:hover {
+            background: #777;
+        }
+        
+        #codeOutput {
+            background: #000;
+            border: 1px solid #555;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 300px;
+            overflow-y: auto;
+            resize: vertical;
+        }
+        
+        .zoom-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .mode-indicator {
+            background: rgba(255, 107, 53, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .instructions {
+            font-size: 11px;
+            color: #aaa;
+            line-height: 1.4;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-
+    <div id="title">🎯 Rectangle Sprite Picker 📐</div>
+    
     <div class="container">
-        <h1>One-bit Tileset Viewer</h1>
-        <p>Loading the tileset image...</p>
-        <canvas id="gameCanvas"></canvas>
+        <div class="left-panel">
+            <div class="zoom-controls">
+                <label>Zoom: </label>
+                <button onclick="changeZoom(0.5)">50%</button>
+                <button onclick="changeZoom(1)">100%</button>
+                <button onclick="changeZoom(1.5)">150%</button>
+                <button onclick="changeZoom(2)">200%</button>
+                <span id="zoomLevel">150%</span>
+            </div>
+            
+            <div class="mode-indicator" id="modeIndicator">
+                🖱️ SELECTION MODE: Click and drag to select sprite rectangles
+            </div>
+            
+            <canvas id="tilesetCanvas"></canvas>
+            
+            <div class="instructions">
+                <strong>🎯 How to use:</strong><br>
+                1. <strong>Click & drag</strong> to select a sprite rectangle<br>
+                2. <strong>Enter a name</strong> in the text box and click "Save Sprite"<br>
+                3. <strong>Repeat</strong> for each sprite you need<br>
+                4. <strong>Generate code</strong> when you're done!<br><br>
+                💡 <strong>Just like pygame.spritesheet:</strong> Each sprite gets its own exact rectangle coordinates
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="info-section">
+                <h3>📍 Current Selection</h3>
+                <div class="current-selection" id="selectionDisplay">
+                    No selection - click and drag on the tileset
+                </div>
+                <canvas id="previewCanvas" class="preview-tile" width="64" height="64"></canvas>
+                
+                <div class="controls">
+                    <input type="text" id="spriteNameInput" placeholder="Sprite name..." style="width: 120px;">
+                    <button onclick="saveCurrentSprite()">💾 Save Sprite</button>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>📊 Tileset Info</h3>
+                <div id="tilesetInfo">Loading...</div>
+            </div>
+            
+            <div class="info-section">
+                <h3>🎨 Saved Sprites</h3>
+                <div class="sprite-list" id="spriteList">
+                    <div style="color: #666; text-align: center; padding: 20px;">
+                        No sprites saved yet.<br>
+                        Select rectangles and save them!
+                    </div>
+                </div>
+                <button onclick="clearAllSprites()" class="secondary">🗑️ Clear All</button>
+                <button onclick="exportSprites()" class="secondary">📤 Export JSON</button>
+                <button onclick="importSprites()" class="secondary">📥 Import JSON</button>
+            </div>
+            
+            <div class="info-section">
+                <h3>🔧 Generated Code</h3>
+                <select id="codeFormat" onchange="generateCode()">
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python (pygame)</option>
+                    <option value="json">JSON Data</option>
+                </select>
+                <button onclick="generateCode()">⚡ Generate Code</button>
+                <textarea id="codeOutput" rows="12" readonly placeholder="Select some sprites and generate code..."></textarea>
+                <button onclick="copyCode()" style="width: 100%;">📋 Copy to Clipboard</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        window.onload = function() {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
+        // Configuration
+        const TILESET_URL = 'https://raw.githubusercontent.com/JakeSeegers/testdorf/main/urizen_onebit_tileset__v2d0.png';
+        let zoom = 1.5;
+        
+        // Canvas references
+        let tilesetCanvas, tilesetCtx, previewCanvas, previewCtx;
+        let tilesetImage = null;
+        
+        // Selection state
+        let isSelecting = false;
+        let selectionStart = { x: 0, y: 0 };
+        let selectionEnd = { x: 0, y: 0 };
+        let currentSelection = null;
+        
+        // Saved sprites
+        let savedSprites = [];
+        let selectedSpriteIndex = -1;
+        
+        function init() {
+            console.log('🎯 Initializing Rectangle Sprite Picker...');
             
-            // Set canvas size for better viewing
-            const scale = 8;
-            canvas.width = 64 * scale;
-            canvas.height = 64 * scale;
-
-            // Image path provided by the user
-            // The file path has been updated to correctly reference the uploaded file.
-            const tilesetPath = 'uploaded://urizen_onebit_tileset__v2d0.jpg';
-
-            const tilesetImage = new Image();
-            tilesetImage.src = tilesetPath;
-
-            tilesetImage.onload = () => {
-                try {
-                    // Draw the entire tileset image onto the canvas, scaled up
-                    // This is useful for debugging and viewing the whole spritesheet
-                    ctx.drawImage(tilesetImage, 0, 0, canvas.width, canvas.height);
-                    console.log("Tileset image loaded and drawn successfully.");
-                    document.querySelector('p').textContent = "Tileset loaded successfully.";
-                } catch (error) {
-                    console.error("Error drawing image to canvas:", error);
-                    document.querySelector('p').textContent = "Error drawing image. Check the browser console.";
+            // Get canvas elements
+            tilesetCanvas = document.getElementById('tilesetCanvas');
+            tilesetCtx = tilesetCanvas.getContext('2d');
+            previewCanvas = document.getElementById('previewCanvas');
+            previewCtx = previewCanvas.getContext('2d');
+            
+            // Set image rendering
+            tilesetCtx.imageSmoothingEnabled = false;
+            previewCtx.imageSmoothingEnabled = false;
+            
+            // Load tileset
+            loadTileset();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Load saved data
+            loadSavedSprites();
+        }
+        
+        function loadTileset() {
+            console.log('📦 Loading tileset...');
+            
+            tilesetImage = new Image();
+            tilesetImage.crossOrigin = 'anonymous';
+            
+            tilesetImage.onload = function() {
+                console.log('✅ Tileset loaded!');
+                console.log('📐 Dimensions:', tilesetImage.width, 'x', tilesetImage.height);
+                
+                updateTilesetInfo();
+                renderTileset();
+            };
+            
+            tilesetImage.onerror = function() {
+                console.error('❌ Failed to load tileset');
+                document.getElementById('tilesetInfo').textContent = '❌ Failed to load tileset';
+            };
+            
+            tilesetImage.src = TILESET_URL;
+        }
+        
+        function setupEventListeners() {
+            // Mouse events for rectangle selection
+            tilesetCanvas.addEventListener('mousedown', onMouseDown);
+            tilesetCanvas.addEventListener('mousemove', onMouseMove);
+            tilesetCanvas.addEventListener('mouseup', onMouseUp);
+            tilesetCanvas.addEventListener('mouseleave', onMouseLeave);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                switch(e.key) {
+                    case 'Escape':
+                        clearSelection();
+                        break;
+                    case 'Enter':
+                        if (currentSelection) {
+                            document.getElementById('spriteNameInput').focus();
+                        }
+                        break;
+                    case 'Delete':
+                    case 'Backspace':
+                        if (selectedSpriteIndex >= 0) {
+                            deleteSprite(selectedSpriteIndex);
+                        }
+                        break;
                 }
+            });
+            
+            // Enter key in name input
+            document.getElementById('spriteNameInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveCurrentSprite();
+                }
+            });
+        }
+        
+        function onMouseDown(e) {
+            const rect = tilesetCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            
+            isSelecting = true;
+            selectionStart = { x, y };
+            selectionEnd = { x, y };
+            currentSelection = null;
+            
+            renderTileset();
+        }
+        
+        function onMouseMove(e) {
+            const rect = tilesetCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / zoom;
+            const y = (e.clientY - rect.top) / zoom;
+            
+            if (isSelecting) {
+                selectionEnd = { x, y };
+                updateCurrentSelection();
+                renderTileset();
+            }
+        }
+        
+        function onMouseUp(e) {
+            if (isSelecting) {
+                isSelecting = false;
+                finalizeSelection();
+            }
+        }
+        
+        function onMouseLeave(e) {
+            if (isSelecting) {
+                isSelecting = false;
+                finalizeSelection();
+            }
+        }
+        
+        function updateCurrentSelection() {
+            if (!isSelecting) return;
+            
+            const x = Math.min(selectionStart.x, selectionEnd.x);
+            const y = Math.min(selectionStart.y, selectionEnd.y);
+            const width = Math.abs(selectionEnd.x - selectionStart.x);
+            const height = Math.abs(selectionEnd.y - selectionStart.y);
+            
+            currentSelection = { x, y, width, height };
+            updateSelectionDisplay();
+        }
+        
+        function finalizeSelection() {
+            updateCurrentSelection();
+            updatePreview();
+        }
+        
+        function clearSelection() {
+            isSelecting = false;
+            currentSelection = null;
+            updateSelectionDisplay();
+            renderTileset();
+        }
+        
+        function updateSelectionDisplay() {
+            const display = document.getElementById('selectionDisplay');
+            
+            if (currentSelection && currentSelection.width > 1 && currentSelection.height > 1) {
+                const { x, y, width, height } = currentSelection;
+                display.innerHTML = `
+                    📐 Rectangle: (${Math.floor(x)}, ${Math.floor(y)}, ${Math.floor(width)}, ${Math.floor(height)})<br>
+                    🎯 pygame format: (${Math.floor(x)}, ${Math.floor(y)}, ${Math.floor(x + width)}, ${Math.floor(y + height)})
+                `;
+            } else {
+                display.textContent = 'No selection - click and drag on the tileset';
+            }
+        }
+        
+        function updatePreview() {
+            if (!currentSelection || !tilesetImage) return;
+            
+            previewCtx.clearRect(0, 0, 64, 64);
+            
+            const { x, y, width, height } = currentSelection;
+            
+            // Make sure we don't go out of bounds
+            if (x >= 0 && y >= 0 && x + width <= tilesetImage.width && y + height <= tilesetImage.height) {
+                // Scale to fit in 64x64 preview
+                const scale = Math.min(64 / width, 64 / height);
+                const previewWidth = width * scale;
+                const previewHeight = height * scale;
+                const offsetX = (64 - previewWidth) / 2;
+                const offsetY = (64 - previewHeight) / 2;
+                
+                previewCtx.drawImage(
+                    tilesetImage,
+                    x, y, width, height,
+                    offsetX, offsetY, previewWidth, previewHeight
+                );
+            }
+        }
+        
+        function saveCurrentSprite() {
+            const nameInput = document.getElementById('spriteNameInput');
+            const name = nameInput.value.trim().toUpperCase();
+            
+            if (!name) {
+                alert('Please enter a name for the sprite!');
+                nameInput.focus();
+                return;
+            }
+            
+            if (!currentSelection || currentSelection.width < 1 || currentSelection.height < 1) {
+                alert('Please select a rectangle first!');
+                return;
+            }
+            
+            // Check for duplicate names
+            if (savedSprites.some(s => s.name === name)) {
+                if (!confirm(`Sprite "${name}" already exists. Replace it?`)) {
+                    return;
+                }
+                // Remove the old one
+                savedSprites = savedSprites.filter(s => s.name !== name);
+            }
+            
+            const sprite = {
+                name: name,
+                x: Math.floor(currentSelection.x),
+                y: Math.floor(currentSelection.y),
+                width: Math.floor(currentSelection.width),
+                height: Math.floor(currentSelection.height)
             };
-
-            tilesetImage.onerror = () => {
-                console.error("Failed to load image:", tilesetPath);
-                document.querySelector('p').textContent = "Failed to load the image. Please check the file path.";
+            
+            savedSprites.push(sprite);
+            nameInput.value = '';
+            
+            updateSpriteList();
+            saveSpriteData();
+            generateCode();
+            
+            console.log('💾 Saved sprite:', sprite);
+        }
+        
+        function updateSpriteList() {
+            const list = document.getElementById('spriteList');
+            
+            if (savedSprites.length === 0) {
+                list.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No sprites saved yet.<br>Select rectangles and save them!</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            savedSprites.forEach((sprite, index) => {
+                const div = document.createElement('div');
+                div.className = 'sprite-item';
+                if (index === selectedSpriteIndex) div.classList.add('selected');
+                
+                div.innerHTML = `
+                    <div class="sprite-name">${sprite.name}</div>
+                    <div class="sprite-coords">x:${sprite.x}, y:${sprite.y}, w:${sprite.width}, h:${sprite.height}</div>
+                `;
+                
+                div.addEventListener('click', () => {
+                    selectedSpriteIndex = index;
+                    updateSpriteList();
+                    highlightSprite(sprite);
+                });
+                
+                list.appendChild(div);
+            });
+        }
+        
+        function highlightSprite(sprite) {
+            currentSelection = sprite;
+            updateSelectionDisplay();
+            updatePreview();
+            renderTileset();
+        }
+        
+        function deleteSprite(index) {
+            if (index >= 0 && index < savedSprites.length) {
+                const sprite = savedSprites[index];
+                if (confirm(`Delete sprite "${sprite.name}"?`)) {
+                    savedSprites.splice(index, 1);
+                    selectedSpriteIndex = -1;
+                    updateSpriteList();
+                    saveSpriteData();
+                    generateCode();
+                }
+            }
+        }
+        
+        function clearAllSprites() {
+            if (savedSprites.length === 0) return;
+            
+            if (confirm('Delete all saved sprites?')) {
+                savedSprites = [];
+                selectedSpriteIndex = -1;
+                updateSpriteList();
+                saveSpriteData();
+                generateCode();
+            }
+        }
+        
+        function updateTilesetInfo() {
+            document.getElementById('tilesetInfo').innerHTML = `
+                📐 Image: ${tilesetImage.width} × ${tilesetImage.height}px<br>
+                🎯 Saved Sprites: ${savedSprites.length}<br>
+                🔍 Current Zoom: ${Math.round(zoom * 100)}%
+            `;
+        }
+        
+        function renderTileset() {
+            if (!tilesetImage) return;
+            
+            const displayWidth = tilesetImage.width * zoom;
+            const displayHeight = tilesetImage.height * zoom;
+            
+            tilesetCanvas.width = displayWidth;
+            tilesetCanvas.height = displayHeight;
+            
+            // Draw the tileset
+            tilesetCtx.drawImage(tilesetImage, 0, 0, displayWidth, displayHeight);
+            
+            // Draw saved sprite rectangles
+            tilesetCtx.strokeStyle = 'rgba(76, 175, 80, 0.8)';
+            tilesetCtx.lineWidth = 1;
+            savedSprites.forEach((sprite, index) => {
+                if (index === selectedSpriteIndex) {
+                    tilesetCtx.strokeStyle = '#FFD700';
+                    tilesetCtx.lineWidth = 2;
+                } else {
+                    tilesetCtx.strokeStyle = 'rgba(76, 175, 80, 0.8)';
+                    tilesetCtx.lineWidth = 1;
+                }
+                
+                tilesetCtx.strokeRect(
+                    sprite.x * zoom,
+                    sprite.y * zoom,
+                    sprite.width * zoom,
+                    sprite.height * zoom
+                );
+                
+                // Label
+                tilesetCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                tilesetCtx.fillRect(sprite.x * zoom, sprite.y * zoom - 15, sprite.name.length * 7, 15);
+                tilesetCtx.fillStyle = '#FFFFFF';
+                tilesetCtx.font = '12px monospace';
+                tilesetCtx.fillText(sprite.name, sprite.x * zoom + 2, sprite.y * zoom - 3);
+            });
+            
+            // Draw current selection
+            if (currentSelection && (isSelecting || selectedSpriteIndex === -1)) {
+                tilesetCtx.strokeStyle = '#FF6B35';
+                tilesetCtx.lineWidth = 2;
+                tilesetCtx.strokeRect(
+                    currentSelection.x * zoom,
+                    currentSelection.y * zoom,
+                    currentSelection.width * zoom,
+                    currentSelection.height * zoom
+                );
+            }
+        }
+        
+        function changeZoom(newZoom) {
+            zoom = newZoom;
+            document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+            updateTilesetInfo();
+            renderTileset();
+        }
+        
+        function generateCode() {
+            const format = document.getElementById('codeFormat').value;
+            const output = document.getElementById('codeOutput');
+            
+            if (savedSprites.length === 0) {
+                output.value = '// No sprites saved yet - select some rectangles first!';
+                return;
+            }
+            
+            let code = '';
+            
+            switch (format) {
+                case 'javascript':
+                    code = generateJavaScriptCode();
+                    break;
+                case 'python':
+                    code = generatePythonCode();
+                    break;
+                case 'json':
+                    code = generateJSONCode();
+                    break;
+            }
+            
+            output.value = code;
+        }
+        
+        function generateJavaScriptCode() {
+            let code = '// Generated sprite rectangles\n';
+            code += '// Format: { x, y, width, height }\n';
+            code += 'const SPRITE_RECTS = {\n';
+            
+            savedSprites.forEach(sprite => {
+                code += `    ${sprite.name}: { x: ${sprite.x}, y: ${sprite.y}, width: ${sprite.width}, height: ${sprite.height} },\n`;
+            });
+            
+            code += '};\n\n';
+            code += '// Usage example:\n';
+            code += '// drawImage(tileset, SPRITE_RECTS.DWARF_MALE.x, SPRITE_RECTS.DWARF_MALE.y, \n';
+            code += '//           SPRITE_RECTS.DWARF_MALE.width, SPRITE_RECTS.DWARF_MALE.height, \n';
+            code += '//           destX, destY, destWidth, destHeight);';
+            
+            return code;
+        }
+        
+        function generatePythonCode() {
+            let code = '# Generated sprite rectangles for pygame.spritesheet\n';
+            code += '# Format: (x, y, width, height) - ready for spritesheet.image_at()\n\n';
+            
+            savedSprites.forEach(sprite => {
+                code += `${sprite.name}_RECT = (${sprite.x}, ${sprite.y}, ${sprite.width}, ${sprite.height})\n`;
+            });
+            
+            code += '\n# Usage example:\n';
+            code += '# ss = spritesheet.spritesheet("your_tileset.png")\n';
+            if (savedSprites.length > 0) {
+                const firstSprite = savedSprites[0];
+                code += `# ${firstSprite.name.toLowerCase()}_image = ss.image_at(${firstSprite.name}_RECT)\n`;
+            }
+            
+            return code;
+        }
+        
+        function generateJSONCode() {
+            return JSON.stringify(savedSprites, null, 2);
+        }
+        
+        function copyCode() {
+            const output = document.getElementById('codeOutput');
+            output.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 1500);
+        }
+        
+        function saveSpriteData() {
+            localStorage.setItem('rectangleSprites', JSON.stringify(savedSprites));
+        }
+        
+        function loadSavedSprites() {
+            const saved = localStorage.getItem('rectangleSprites');
+            if (saved) {
+                savedSprites = JSON.parse(saved);
+                updateSpriteList();
+                updateTilesetInfo();
+                console.log('📂 Loaded saved sprites:', savedSprites.length);
+            }
+        }
+        
+        function exportSprites() {
+            if (savedSprites.length === 0) {
+                alert('No sprites to export!');
+                return;
+            }
+            
+            const data = JSON.stringify(savedSprites, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sprites.json';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        }
+        
+        function importSprites() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (Array.isArray(imported)) {
+                            savedSprites = imported;
+                            updateSpriteList();
+                            updateTilesetInfo();
+                            saveSpriteData();
+                            renderTileset();
+                            generateCode();
+                            alert(`Imported ${imported.length} sprites!`);
+                        } else {
+                            alert('Invalid JSON format!');
+                        }
+                    } catch (error) {
+                        alert('Error reading file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
             };
-        };
+            
+            input.click();
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
     </script>
-
 </body>
 </html>
