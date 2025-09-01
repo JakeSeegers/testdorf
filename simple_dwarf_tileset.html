@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧙‍♂️ Simple Dwarf Colony - Tileset Edition</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #2c1810, #1a0f08);
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        #gameContainer {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #8B4513;
+            background: #2F1B14;
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+            border-radius: 8px;
+        }
+        
+        #ui {
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #8B4513;
+            min-width: 300px;
+            height: fit-content;
+        }
+        
+        #title {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #FFD700;
+            text-shadow: 0 0 10px #FFD700;
+        }
+        
+        .stat-section {
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(139, 69, 19, 0.3);
+            border-radius: 5px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        #controls {
+            margin-top: 20px;
+        }
+        
+        button {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #A0522D;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        #log {
+            background: rgba(0,0,0,0.9);
+            padding: 10px;
+            border-radius: 5px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 15px;
+        }
+        
+        .log-entry {
+            margin: 3px 0;
+            opacity: 0.9;
+        }
+        
+        .log-entry.important {
+            color: #FFD700;
+            font-weight: bold;
+        }
+        
+        .log-entry.error {
+            color: #FF4444;
+        }
+        
+        .log-entry.success {
+            color: #4CAF50;
+        }
+        
+        #tilesetStatus {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .status-loading {
+            background: rgba(255, 193, 7, 0.3);
+            color: #FFC107;
+        }
+        
+        .status-ready {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+        
+        .status-error {
+            background: rgba(244, 67, 54, 0.3);
+            color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">🧙‍♂️ Simple Dwarf Colony - Tileset Edition 🏔️</div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="ui">
+            <div id="tilesetStatus" class="status-loading">📦 Loading tileset...</div>
+            
+            <div class="stat-section">
+                <h3>📊 Colony Stats</h3>
+                <div class="stat-item">
+                    <span>🥇 Gold:</span>
+                    <span class="stat-value" id="goldCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>👥 Dwarfs:</span>
+                    <span class="stat-value" id="dwarfCount">3</span>
+                </div>
+                <div class="stat-item">
+                    <span>🏠 Buildings:</span>
+                    <span class="stat-value" id="buildingCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>💎 Resources:</span>
+                    <span class="stat-value" id="resourceCount">0</span>
+                </div>
+            </div>
+            
+            <div id="controls">
+                <h3>🎮 Actions</h3>
+                <button onclick="spawnDwarf()">👤 Hire Dwarf (50g)</button>
+                <button onclick="buildHouse()" id="buildBtn">🏠 Build House (100g)</button>
+                <button onclick="resetGame()">🔄 Reset Game</button>
+            </div>
+            
+            <div id="log">
+                <div style="color: #4ECDC4; font-weight: bold; margin-bottom: 8px;">📜 Colony Log:</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================================
+        // TILESET CONFIGURATION
+        // ===========================================
+        
+        // UPDATE THIS URL to point to your GitHub-hosted tileset image
+        const TILESET_URL = 'https://raw.githubusercontent.com/yourusername/yourrepo/main/tileset.png';
+        
+        // Tileset configuration (adjust based on your actual tileset)
+        const TILE_SIZE = 16; // Size of each tile in pixels
+        const TILESET_COLS = 64; // Number of columns in your tileset
+        const TILESET_ROWS = 32; // Number of rows in your tileset
+        
+        // Tile mapping - maps game objects to tile coordinates
+        const TILE_MAP = {
+            // Terrain
+            GRASS: { x: 0, y: 0 },
+            STONE: { x: 1, y: 0 },
+            DIRT: { x: 2, y: 0 },
+            WATER: { x: 3, y: 0 },
+            TREE: { x: 4, y: 0 },
+            
+            // Characters
+            DWARF_MALE: { x: 0, y: 1 },
+            DWARF_FEMALE: { x: 1, y: 1 },
+            DWARF_WORKING: { x: 2, y: 1 },
+            
+            // Buildings
+            HOUSE: { x: 0, y: 2 },
+            MINE: { x: 1, y: 2 },
+            WORKSHOP: { x: 2, y: 2 },
+            
+            // Resources
+            GOLD_ORE: { x: 0, y: 3 },
+            FOOD: { x: 1, y: 3 },
+            TOOLS: { x: 2, y: 3 },
+            
+            // UI/Effects
+            SELECTION: { x: 0, y: 4 },
+            SPARKLE: { x: 1, y: 4 }
+        };
+        
+        // ===========================================
+        // GAME VARIABLES
+        // ===========================================
+        
+        let canvas, ctx;
+        let tilesetImage = null;
+        let tilesetLoaded = false;
+        
+        // Game state
+        const game = {
+            gold: 50,
+            dwarfs: [],
+            buildings: [],
+            resources: [],
+            time: 0,
+            selectedDwarf: null
+        };
+        
+        // Map dimensions
+        const MAP_WIDTH = 50; // tiles
+        const MAP_HEIGHT = 37; // tiles
+        const SCALE = 1; // Scale factor for rendering
+        
+        // Camera/viewport
+        const camera = {
+            x: 0,
+            y: 0
+        };
+        
+        // ===========================================
+        // TILESET LOADING
+        // ===========================================
+        
+        function loadTileset() {
+            console.log('🎨 Loading tileset from:', TILESET_URL);
+            
+            tilesetImage = new Image();
+            tilesetImage.crossOrigin = 'anonymous'; // For GitHub images
+            
+            tilesetImage.onload = function() {
+                console.log('✅ Tileset loaded successfully!');
+                console.log('📐 Tileset dimensions:', tilesetImage.width, 'x', tilesetImage.height);
+                
+                tilesetLoaded = true;
+                updateTilesetStatus('ready', '✅ Tileset Ready!');
+                addLog('🎨 Beautiful tileset graphics loaded!', 'success');
+                
+                // Initialize the game now that tileset is ready
+                initializeGame();
+            };
+            
+            tilesetImage.onerror = function() {
+                console.error('❌ Failed to load tileset from:', TILESET_URL);
+                updateTilesetStatus('error', '❌ Tileset failed to load');
+                addLog('⚠️ Using placeholder graphics (tileset failed to load)', 'error');
+                
+                // Initialize game with placeholder graphics
+                tilesetLoaded = false;
+                initializeGame();
+            };
+            
+            tilesetImage.src = TILESET_URL;
+        }
+        
+        function updateTilesetStatus(status, message) {
+            const statusEl = document.getElementById('tilesetStatus');
+            statusEl.className = `status-${status}`;
+            statusEl.textContent = message;
+        }
+        
+        // ===========================================
+        // TILE DRAWING FUNCTIONS
+        // ===========================================
+        
+        function drawTile(tileKey, x, y, scale = SCALE) {
+            if (!tilesetLoaded || !tilesetImage) {
+                // Fallback to colored rectangles
+                drawPlaceholderTile(tileKey, x, y, scale);
+                return;
+            }
+            
+            const tile = TILE_MAP[tileKey];
+            if (!tile) {
+                console.warn('Unknown tile:', tileKey);
+                return;
+            }
+            
+            const sourceX = tile.x * TILE_SIZE;
+            const sourceY = tile.y * TILE_SIZE;
+            const destSize = TILE_SIZE * scale;
+            
+            ctx.drawImage(
+                tilesetImage,
+                sourceX, sourceY, TILE_SIZE, TILE_SIZE,  // Source rectangle
+                x, y, destSize, destSize                  // Destination rectangle
+            );
+        }
+        
+        function drawPlaceholderTile(tileKey, x, y, scale = SCALE) {
+            const size = TILE_SIZE * scale;
+            
+            // Simple colored rectangles as fallbacks
+            const colors = {
+                GRASS: '#228B22',
+                STONE: '#696969',
+                DIRT: '#8B4513',
+                WATER: '#4682B4',
+                TREE: '#006400',
+                DWARF_MALE: '#4A90E2',
+                DWARF_FEMALE: '#E24A90',
+                DWARF_WORKING: '#FFD700',
+                HOUSE: '#8B4513',
+                MINE: '#2F4F4F',
+                WORKSHOP: '#B8860B',
+                GOLD_ORE: '#FFD700',
+                FOOD: '#32CD32',
+                TOOLS: '#C0C0C0'
+            };
+            
+            ctx.fillStyle = colors[tileKey] || '#FFFFFF';
+            ctx.fillRect(x, y, size, size);
+            
+            // Add a border
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, size, size);
+        }
+        
+        // ===========================================
+        // GAME OBJECTS
+        // ===========================================
+        
+        class Dwarf {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.targetX = x;
+                this.targetY = y;
+                this.gender = Math.random() < 0.5 ? 'male' : 'female';
+                this.task = 'idle';
+                this.workTimer = 0;
+                this.speed = 0.05;
+                this.name = this.generateName();
+            }
+            
+            generateName() {
+                const names = ['Thorin', 'Gimli', 'Balin', 'Dwalin', 'Fili', 'Kili', 'Bofur', 'Bombur'];
+                return names[Math.floor(Math.random() * names.length)];
+            }
+            
+            update() {
+                // Move towards target
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 0.1) {
+                    this.x += (dx / distance) * this.speed;
+                    this.y += (dy / distance) * this.speed;
+                } else {
+                    // Reached target, do work or pick new target
+                    if (this.task === 'mining') {
+                        this.doMining();
+                    } else if (this.task === 'building') {
+                        this.doBuilding();
+                    } else {
+                        this.pickNewTarget();
+                    }
+                }
+                
+                if (this.workTimer > 0) this.workTimer--;
+            }
+            
+            pickNewTarget() {
+                // Look for nearby gold to mine
+                const nearbyGold = game.resources.find(r => 
+                    r.type === 'gold' && 
+                    Math.abs(r.x - this.x) < 5 && 
+                    Math.abs(r.y - this.y) < 5
+                );
+                
+                if (nearbyGold) {
+                    this.targetX = nearbyGold.x;
+                    this.targetY = nearbyGold.y;
+                    this.task = 'mining';
+                } else {
+                    // Wander randomly
+                    this.targetX = Math.random() * MAP_WIDTH;
+                    this.targetY = Math.random() * MAP_HEIGHT;
+                    this.task = 'wandering';
+                }
+            }
+            
+            doMining() {
+                if (this.workTimer <= 0) {
+                    // Find gold at this location
+                    const goldHere = game.resources.find(r => 
+                        r.type === 'gold' && 
+                        Math.floor(r.x) === Math.floor(this.x) && 
+                        Math.floor(r.y) === Math.floor(this.y)
+                    );
+                    
+                    if (goldHere) {
+                        game.gold += 10;
+                        game.resources = game.resources.filter(r => r !== goldHere);
+                        addLog(`⛏️ ${this.name} mined 10 gold!`);
+                        this.task = 'idle';
+                        this.workTimer = 60;
+                    }
+                }
+            }
+            
+            doBuilding() {
+                if (this.workTimer <= 0) {
+                    addLog(`🏠 ${this.name} completed construction!`, 'success');
+                    this.task = 'idle';
+                    this.workTimer = 120;
+                }
+            }
+            
+            draw() {
+                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
+                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
+                
+                let tileKey = this.gender === 'male' ? 'DWARF_MALE' : 'DWARF_FEMALE';
+                if (this.task === 'mining' || this.task === 'building') {
+                    tileKey = 'DWARF_WORKING';
+                }
+                
+                drawTile(tileKey, screenX, screenY);
+                
+                // Draw name
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, screenX + TILE_SIZE/2, screenY - 2);
+                ctx.textAlign = 'left';
+            }
+        }
+        
+        class Building {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+            }
+            
+            draw() {
+                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
+                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
+                drawTile('HOUSE', screenX, screenY);
+            }
+        }
+        
+        class Resource {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+            }
+            
+            draw() {
+                const screenX = (this.x - camera.x) * TILE_SIZE * SCALE;
+                const screenY = (this.y - camera.y) * TILE_SIZE * SCALE;
+                
+                if (this.type === 'gold') {
+                    drawTile('GOLD_ORE', screenX, screenY);
+                }
+            }
+        }
+        
+        // ===========================================
+        // GAME INITIALIZATION
+        // ===========================================
+        
+        function initializeGame() {
+            console.log('🎮 Initializing game...');
+            
+            // Create initial dwarfs
+            game.dwarfs = [];
+            for (let i = 0; i < 3; i++) {
+                const dwarf = new Dwarf(
+                    MAP_WIDTH / 2 + (i - 1) * 2,
+                    MAP_HEIGHT / 2
+                );
+                game.dwarfs.push(dwarf);
+            }
+            
+            // Create some initial gold deposits
+            game.resources = [];
+            for (let i = 0; i < 10; i++) {
+                game.resources.push(new Resource(
+                    Math.random() * MAP_WIDTH,
+                    Math.random() * MAP_HEIGHT,
+                    'gold'
+                ));
+            }
+            
+            addLog('🏔️ Welcome to your dwarf colony!', 'important');
+            addLog('⛏️ Dwarfs will automatically mine nearby gold', 'important');
+            addLog('🏠 Build houses to expand your colony!', 'important');
+            
+            // Start the game loop
+            if (!game.running) {
+                game.running = true;
+                gameLoop();
+            }
+        }
+        
+        // ===========================================
+        // GAME LOOP
+        // ===========================================
+        
+        function gameLoop() {
+            if (!game.running) return;
+            
+            update();
+            render();
+            
+            game.time++;
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function update() {
+            // Update all dwarfs
+            game.dwarfs.forEach(dwarf => dwarf.update());
+            
+            // Spawn new gold occasionally
+            if (game.time % 600 === 0 && game.resources.length < 15) {
+                game.resources.push(new Resource(
+                    Math.random() * MAP_WIDTH,
+                    Math.random() * MAP_HEIGHT,
+                    'gold'
+                ));
+            }
+            
+            // Update UI
+            if (game.time % 30 === 0) {
+                updateUI();
+            }
+        }
+        
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#2F1B14';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw terrain (simple grass background)
+            for (let x = 0; x < Math.ceil(canvas.width / TILE_SIZE) + 1; x++) {
+                for (let y = 0; y < Math.ceil(canvas.height / TILE_SIZE) + 1; y++) {
+                    const worldX = Math.floor(camera.x) + x;
+                    const worldY = Math.floor(camera.y) + y;
+                    
+                    if (worldX >= 0 && worldX < MAP_WIDTH && worldY >= 0 && worldY < MAP_HEIGHT) {
+                        const screenX = x * TILE_SIZE - ((camera.x % 1) * TILE_SIZE);
+                        const screenY = y * TILE_SIZE - ((camera.y % 1) * TILE_SIZE);
+                        
+                        // Simple terrain variation
+                        let tileType = 'GRASS';
+                        if (Math.random() < 0.1) tileType = 'DIRT';
+                        if (Math.random() < 0.05) tileType = 'STONE';
+                        
+                        drawTile(tileType, screenX, screenY);
+                    }
+                }
+            }
+            
+            // Draw resources
+            game.resources.forEach(resource => resource.draw());
+            
+            // Draw buildings
+            game.buildings.forEach(building => building.draw());
+            
+            // Draw dwarfs
+            game.dwarfs.forEach(dwarf => dwarf.draw());
+            
+            // Draw grid (optional, for debugging)
+            if (false) { // Set to true to show grid
+                drawGrid();
+            }
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // ===========================================
+        // USER INTERFACE
+        // ===========================================
+        
+        function updateUI() {
+            document.getElementById('goldCount').textContent = game.gold;
+            document.getElementById('dwarfCount').textContent = game.dwarfs.length;
+            document.getElementById('buildingCount').textContent = game.buildings.length;
+            document.getElementById('resourceCount').textContent = game.resources.length;
+            
+            // Update button states
+            document.getElementById('buildBtn').disabled = game.gold < 100;
+        }
+        
+        function addLog(message, type = '') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${Math.floor(game.time / 60)}s] ${message}`;
+            
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            // Keep only last 20 entries
+            while (logDiv.children.length > 21) { // +1 for the title
+                logDiv.removeChild(logDiv.children[1]);
+            }
+        }
+        
+        // ===========================================
+        // USER ACTIONS
+        // ===========================================
+        
+        function spawnDwarf() {
+            if (game.gold >= 50) {
+                game.gold -= 50;
+                const newDwarf = new Dwarf(
+                    MAP_WIDTH / 2 + Math.random() * 4 - 2,
+                    MAP_HEIGHT / 2 + Math.random() * 4 - 2
+                );
+                game.dwarfs.push(newDwarf);
+                addLog(`👤 ${newDwarf.name} joined the colony!`, 'success');
+            }
+        }
+        
+        function buildHouse() {
+            if (game.gold >= 100) {
+                game.gold -= 100;
+                const building = new Building(
+                    MAP_WIDTH / 2 + game.buildings.length * 2,
+                    MAP_HEIGHT / 2 - 3,
+                    'house'
+                );
+                game.buildings.push(building);
+                
+                // Assign a dwarf to build it
+                const availableDwarf = game.dwarfs.find(d => d.task === 'idle' || d.task === 'wandering');
+                if (availableDwarf) {
+                    availableDwarf.targetX = building.x;
+                    availableDwarf.targetY = building.y;
+                    availableDwarf.task = 'building';
+                    availableDwarf.workTimer = 180;
+                    addLog(`🔨 ${availableDwarf.name} is building a house!`);
+                } else {
+                    addLog('🏠 House built!', 'success');
+                }
+            }
+        }
+        
+        function resetGame() {
+            game.gold = 50;
+            game.dwarfs = [];
+            game.buildings = [];
+            game.resources = [];
+            game.time = 0;
+            
+            // Clear log
+            const logDiv = document.getElementById('log');
+            while (logDiv.children.length > 1) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+            
+            initializeGame();
+            addLog('🔄 Colony reset!', 'important');
+        }
+        
+        // ===========================================
+        // INITIALIZATION
+        // ===========================================
+        
+        function init() {
+            console.log('🚀 Starting Simple Dwarf Colony...');
+            
+            // Get canvas
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            if (!canvas || !ctx) {
+                console.error('❌ Failed to initialize canvas');
+                return;
+            }
+            
+            console.log('✅ Canvas initialized');
+            
+            // Load tileset (this will initialize the game when ready)
+            loadTileset();
+        }
+        
+        // Start when page loads
+        window.addEventListener('load', init);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Could implement canvas resizing here if needed
+        });
+        
+        // Keyboard controls (optional)
+        window.addEventListener('keydown', (e) => {
+            const speed = 2;
+            switch(e.key) {
+                case 'ArrowUp': camera.y = Math.max(0, camera.y - speed); break;
+                case 'ArrowDown': camera.y = Math.min(MAP_HEIGHT - 20, camera.y + speed); break;
+                case 'ArrowLeft': camera.x = Math.max(0, camera.x - speed); break;
+                case 'ArrowRight': camera.x = Math.min(MAP_WIDTH - 20, camera.x + speed); break;
+            }
+        });
+        
+        console.log('📋 Instructions:');
+        console.log('1. Upload your tileset PNG to GitHub');
+        console.log('2. Copy the raw GitHub URL');
+        console.log('3. Update TILESET_URL in the code');
+        console.log('4. Adjust TILE_MAP coordinates to match your tileset');
+        console.log('5. Use arrow keys to move camera around');
+    </script>
+</body>
+</html>
